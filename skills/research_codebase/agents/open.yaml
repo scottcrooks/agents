@@ -1,0 +1,6 @@
+interface:
+    display_name: "Research codebase"
+    short_description: "Research a codebase to figure out how to accomplish a stated goal"
+
+policy:
+    allow_implicit_invocation: false

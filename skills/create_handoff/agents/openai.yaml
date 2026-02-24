@@ -1,0 +1,6 @@
+interface:
+    display_name: "Create Handoff"
+    short_description: "Creates a context checkpoint that can be used to continue a session"
+
+policy:
+    allow_implicit_invocation: false

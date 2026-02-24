@@ -1,0 +1,6 @@
+interface:
+    display_name: "Create Plan"
+    short_description: "Creates an implementation plan based on existing research"
+
+policy:
+    allow_implicit_invocation: false

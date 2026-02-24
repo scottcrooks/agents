@@ -1,0 +1,6 @@
+interface:
+    display_name: "Iterate Plan"
+    short_description: "Iterates and improves on an existing plan based on user feedback"
+
+policy:
+    allow_implicit_invocation: false

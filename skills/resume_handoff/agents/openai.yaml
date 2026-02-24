@@ -1,0 +1,6 @@
+interface:
+    display_name: "Resume Handoff"
+    short_description: "Resumes work from an established handoff"
+
+policy:
+    allow_implicit_invocation: false
