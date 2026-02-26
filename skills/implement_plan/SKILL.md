@@ -344,7 +344,7 @@ After structure approval:
 **Always separate success criteria into two categories:**
 
 1. **Automated Verification** (can be run by execution agents):
-   - Run all automated verifications based on AGENTS.md
+   - Run all verifications called out in the plan definition
    - Specific files that should exist
    - Code compilation/type checking
    - Automated test suites

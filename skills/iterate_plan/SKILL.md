@@ -195,7 +195,8 @@ Get user confirmation before proceeding.
 When updating success criteria, always maintain the two-category structure:
 
 1. **Automated Verification** (can be run by execution agents):
-   - Run all automated verifications based on AGENTS.md
+   - Look at the make file to identify and run common verification tasks. Look for test/lint/build/audit style commands
+   - **if no makefile exists** Based on the toolchain, look for common verification patterns
    - Prefer `make` commands: `make -C humanlayer-wui check` instead of `cd humanlayer-wui && bun run fmt`
    - Specific files that should exist
    - Code compilation/type checking

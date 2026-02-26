@@ -296,7 +296,6 @@ After structure approval:
    - Adjust technical approach
    - Clarify success criteria (both automated and manual)
    - Add/remove scope items
-   - After making changes, run `humanlayer thoughts sync` again
 
 3. **Continue refining** until the user is satisfied
 
@@ -344,7 +343,8 @@ After structure approval:
 **Always separate success criteria into two categories:**
 
 1. **Automated Verification** (can be run by execution agents):
-   - Run all validatations as specified in AGENTS.md
+   - Look at the make file to identify and run common verification tasks. Look for test/lint/build/audit style commands
+   - **if no makefile exists** Based on the toolchain, look for common verification patterns
    - Specific files that should exist
    - Code compilation/type checking
    - Automated test suites
