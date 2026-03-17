@@ -44,10 +44,11 @@ Then wait for the user's research query.
 
 3. **Spawn parallel sub-agent tasks for comprehensive research:**
    - Create multiple Task agents to research different aspects concurrently
-   - We now have specialized agents that know how to do specific research tasks:
+   - First, do lightweight native discovery yourself to identify the most relevant files, directories, and symbols
+   - Then use specialized agents for deeper focused research tasks:
 
    **For codebase research:**
-   - Use the **codebase-locator** agent to find WHERE files and components live
+   - Use native Codex exploration and search to find where files and components live
    - Use the **codebase-analyzer** agent to understand HOW specific code works (without critiquing it)
    - Use the **codebase-pattern-finder** agent to find examples of existing patterns (without evaluating them)
 
@@ -66,7 +67,7 @@ Then wait for the user's research query.
    - Use the **linear-searcher** agent to find related tickets or historical context
 
    The key is to use these agents intelligently:
-   - Start with locator agents to find what exists
+   - Start with native exploration to find what exists
    - Then use analyzer agents on the most promising findings to document how they work
    - Run multiple agents in parallel when they're searching for different things
    - Each agent knows its job - just tell it what you're looking for

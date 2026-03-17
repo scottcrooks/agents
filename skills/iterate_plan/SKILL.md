@@ -71,7 +71,7 @@ If the user's feedback requires understanding new code patterns or validating as
    Use the right agent for each type of research:
 
    **For code investigation:**
-   - **codebase-locator** - To find relevant files
+   - Native Codex exploration and search - To find relevant files
    - **codebase-analyzer** - To understand implementation details
    - **codebase-pattern-finder** - To find similar patterns
 
