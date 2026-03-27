@@ -1,0 +1,7 @@
+interface:
+    display_name: "Design Doc"
+    short_description: "Turns research into a proposed solution with alternatives and tradeoffs"
+
+policy:
+    allow_implicit_invocation: false
+

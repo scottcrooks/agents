@@ -1,0 +1,7 @@
+interface:
+    display_name: "Structured Outline"
+    short_description: "Shapes a chosen design into phases, dependencies, and validation areas"
+
+policy:
+    allow_implicit_invocation: false
+

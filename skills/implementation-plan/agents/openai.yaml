@@ -1,0 +1,6 @@
+interface:
+    display_name: "Implementation Plan"
+    short_description: "Expands an outline into concrete steps, sequencing, and verification"
+
+policy:
+    allow_implicit_invocation: false
