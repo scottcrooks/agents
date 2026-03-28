@@ -14,6 +14,9 @@ Operating contract:
 - Expand the structured outline into a complete execution plan without re-opening design exploration.
 - Carry forward enough context that the final plan is self-sufficient during execution.
 - Do not broaden scope beyond what the upstream artifacts and research boundary establish.
+- Prefer vertical execution slices over horizontal layer-by-layer plans unless the upstream artifacts explicitly require another structure.
+- Build validation into the plan between slices so each major increment is tested before moving on.
+- Include manual verification checkpoints when human confirmation is the safest or clearest way to validate behavior.
 
 The output of this skill must be fully executable without requiring the reader to consult the design doc, structured outline, or research during execution. Any context needed to execute safely should be carried forward into the plan itself.
 
@@ -27,6 +30,8 @@ This skill should include:
 - Enough carried-forward context that the plan can be executed on its own
 - Concrete targets such as files, components, interfaces, and integration points when relevant to execution
 - Automated validation steps derived from the repository where possible
+- Vertical slices or similarly incremental execution chunks when the work can be structured that way
+- Manual verification checkpoints where user-visible behavior, workflows, or operational outcomes need human confirmation
 
 This skill may include:
 - Concrete validation activities such as verifying behaviors, confirming edge cases, and regression-testing affected pathways
@@ -71,6 +76,9 @@ When invoked:
 - Expand the compressed outline into actionable detail without re-opening high-level design debates
 - Inline the critical context needed to perform the work so the reader does not need to refer back to prior artifacts
 - Make the execution order specific enough that an implementer can follow it directly
+- Prefer end-to-end vertical slices that deliver a thin but testable increment before expanding breadth
+- Avoid defaulting to horizontal sequencing like database first, then services, then frontend, unless the upstream artifacts explicitly require that shape
+- Make each slice small enough that verification can happen before the next slice begins
 
 ### 3. Define verification
 
@@ -86,6 +94,9 @@ When invoked:
   - Regression-test Z pathway
 - Include manual or automated verification guidance where relevant
 - State success criteria clearly enough that the implementer can tell whether the change is complete
+- Prefer automated checks after each slice where possible
+- Add manual verification checkpoints after slices when correctness depends on user-visible behavior, cross-system effects, or subjective confirmation that automation alone will not cover well
+- Make it clear which validation happens before proceeding to the next slice
 
 ### Subagent usage
 
@@ -126,16 +137,29 @@ Produce the implementation plan with this shape:
 - [Constraint that materially affects execution]
 - [Assumption or dependency the implementer must know]
 
-## Execution Order
-1. [Concrete step]
-2. [Concrete step]
-3. [Concrete step]
+## Execution Strategy
+- [Vertical slices or other chosen structure]
+- [Why this execution shape reduces risk]
+
+## Execution Slices
+1. [Slice]
+   - Objective
+   - Concrete implementation steps
+   - Dependencies or file/component touchpoints
+   - Automated validation
+   - Manual verification checkpoint if needed
+2. [Slice]
+   - Objective
+   - Concrete implementation steps
+   - Dependencies or file/component touchpoints
+   - Automated validation
+   - Manual verification checkpoint if needed
 
 ## Implementation Details
 - [Specific component or file area and what changes]
 - [Integration point or dependency]
 
-## Validation Steps
+## Cross-Slice Validation
 - Verify [X behavior]
 - Confirm [Y edge case]
 - Regression-test [Z pathway]
@@ -163,3 +187,5 @@ Produce the implementation plan with this shape:
 - Any code snippets should clarify execution-critical details or referenced pattern application without replacing the plan with a full patch
 - The reader should not need any other artifact to execute the plan safely
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
+- Prefer plans that move in vertical, testable slices with validation between increments
+- Include manual verification checkpoints where appropriate instead of pretending automation fully covers the risk

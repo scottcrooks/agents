@@ -13,6 +13,10 @@ Operating contract:
 - Research is the authoritative boundary for scope and problem framing.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
+- This skill is discussion-first: do not jump straight to writing a design doc unless there is a concrete idea, proposed change, or design decision to evaluate.
+- If the user only supplies research and no actionable design question, ask for their idea before drafting anything.
+- This skill must make tradeoffs explicit: do not present conclusions as settled without showing what was considered, what was rejected, and why.
+- This skill must not write the design doc until the user has explicitly approved moving from discussion into artifact creation.
 
 ## Boundaries
 
@@ -24,6 +28,7 @@ This skill should include:
 - Tradeoffs
 - Resolved questions and decisions
 - Relevant pattern references and why they apply or do not apply
+- Small illustrative code snippets when they materially help explain a pattern fit, tradeoff, or recommendation
 
 This skill should not include:
 - Implementation task lists
@@ -32,8 +37,9 @@ This skill should not include:
 - Step-by-step execution instructions
 
 Code snippets in this phase:
-- Include a code snippet only when it materially helps explain a pattern fit, tradeoff, or architectural choice
+- Prefer short, focused code snippets when they materially help the reviewer understand a pattern fit, tradeoff, or architectural choice
 - Keep snippets short and illustrative rather than implementation-ready
+- Pair each snippet with a brief explanation of why it supports the recommendation or comparison
 - Do not include enough code detail that the document becomes an execution plan
 
 ## Initial Response
@@ -45,10 +51,21 @@ When invoked:
    - Treat that research as the source of truth for problem framing
    - Do not rewrite or expand the research phase itself
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
+   - After reading, determine whether there is an actual design decision to make
+   - If the research describes current state or background only, and the user has not stated what they want to change, ask for their idea instead of drafting a design doc
+   - Do not infer a proposed solution or fabricate a target decision merely because research was provided
 2. If no supporting context was provided, ask for:
    - The research document or ticket
    - Any constraints or non-goals
    - Any existing patterns or prior implementations that should be considered as supporting references
+
+Required gating before drafting:
+- You must know what is being proposed, changed, or decided
+- You must know the key tradeoffs to evaluate, either from the user or from follow-up discussion
+- If either is missing, ask concise questions and continue the design conversation before producing the artifact
+- You must have explicitly discussed the most relevant tradeoffs in the conversation
+- If you found multiple viable options, you must have presented those options to the user before drafting
+- You must have explicit user approval to write the design document
 
 ## Workflow
 
@@ -64,6 +81,11 @@ When invoked:
 - Identify the realistic solution options
 - Compare them against the constraints from the research
 - Call out where an option introduces complexity, risk, or future maintenance cost
+- Explicitly state the tradeoffs between options, not just their standalone pros or cons
+- If one option is preferred only under certain priorities, surface that dependency and ask the user to choose the priority when it is not already clear
+- Do not collapse multiple plausible approaches into a single recommendation without first comparing them in plain language
+- If you find more than one viable option, present the options to the user explicitly before converging on a recommendation
+- Make the option review visible in the conversation, not just in the final document
 
 ### 3. Use patterns correctly
 
@@ -71,6 +93,7 @@ Patterns are inputs to design evaluation in this phase.
 
 - Reference existing code or documented patterns when they help assess an approach
 - Explain why a pattern fits, partially fits, or does not fit
+- When helpful, include a small snippet from an existing pattern so the reviewer can quickly see the shape being referenced instead of relying on links alone
 - Use pattern references to support tradeoff analysis, not to prescribe implementation steps
 - Use codebase evidence only to evaluate approaches within the researched boundary, not to perform a new discovery or planning pass
 
@@ -90,8 +113,20 @@ Patterns are inputs to design evaluation in this phase.
 - If something remains unresolved, stop and ask only the specific question needed to make the design decision
 - Continue the design discussion until all design-relevant open questions are resolved
 - Do not carry unresolved questions into the final artifact unless the user explicitly wants a decision log with open items
+- Treat the interaction as iterative by default: discuss tradeoffs with the user when the recommendation depends on product intent, priorities, or ambiguous constraints
+- A research doc alone is not evidence that the user wants the design artifact immediately; if intent is missing, ask first
+- If the recommendation depends on choosing between competing values like speed, simplicity, consistency, flexibility, or operational risk, explicitly discuss that tradeoff with the user before finalizing the decision
+
+### 5. Get approval before writing
+
+- After discussing options and tradeoffs, summarize the recommended direction and the rejected alternatives in the conversation
+- Ask the user explicitly whether they want you to write the design doc now
+- Do not create or update `thoughts/designs/...` until the user answers yes or otherwise gives clear approval
+- If the user wants more discussion, continue iterating instead of writing
 
 ## Output
+
+Only after explicit user approval:
 
 Write the design document to:
 
@@ -131,6 +166,7 @@ Produce the design document with this shape:
 ## Referenced Patterns
 - [Pattern or file/reference]
 - [Why it applies or why it does not]
+- [Optional short illustrative snippet and why it matters]
 ```
 
 ## Quality Bar
@@ -138,7 +174,13 @@ Produce the design document with this shape:
 - Keep the artifact focused on solution choice and rationale
 - Every recommendation should trace back to research, constraints, or observed patterns
 - Avoid implementation detail unless it is necessary to explain a tradeoff
+- Use code snippets when they clarify pattern intent or tradeoff reasoning better than references alone
 - Any code snippets should stay at architectural illustration level, not implementation level
 - Do not finalize the design doc while required design decisions remain unresolved
+- Do not finalize the design doc if the user has not yet provided the idea, target change, or decision under discussion
+- Do not finalize the design doc if tradeoffs were not explicitly covered
+- Do not finalize the design doc if multiple viable options were found but not presented to the user
+- Do not write the design doc without explicit user approval
+- Recommendations must include at least one rejected alternative and the reason it was not chosen
 - Treat this document as compressed context for later phases rather than as an executable plan
 - If the user wants execution shape next, hand off naturally to `structured-outline`
