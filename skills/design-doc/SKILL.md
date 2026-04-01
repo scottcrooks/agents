@@ -10,6 +10,7 @@ Use this skill to turn research into a high-level design recommendation.
 Core question: what should we do, and why this approach over the alternatives?
 
 Operating contract:
+- A linked research doc is mandatory input for this skill.
 - Research is the authoritative boundary for scope and problem framing.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
@@ -55,11 +56,16 @@ When invoked:
    - If the research describes current state or background only, and the user has not stated what they want to change, ask for their idea instead of drafting a design doc
    - Do not infer a proposed solution or fabricate a target decision merely because research was provided
 2. If no supporting context was provided, ask for:
-   - The research document or ticket
+   - The linked research document
    - Any constraints or non-goals
    - Any existing patterns or prior implementations that should be considered as supporting references
+3. If the request does not include a linked research doc:
+   - Stop and ask for the linked research doc before doing design work
+   - Do not substitute ad hoc chat context, memory, or fresh discovery for the required research artifact
+   - Do not draft, outline, or recommend solutions until that linked research doc is available
 
 Required gating before drafting:
+- You must have a linked research doc
 - You must know what is being proposed, changed, or decided
 - You must know the key tradeoffs to evaluate, either from the user or from follow-up discussion
 - If either is missing, ask concise questions and continue the design conversation before producing the artifact
@@ -173,6 +179,7 @@ Produce the design document with this shape:
 
 - Keep the artifact focused on solution choice and rationale
 - Every recommendation should trace back to research, constraints, or observed patterns
+- Refuse to proceed if no linked research doc was provided
 - Avoid implementation detail unless it is necessary to explain a tradeoff
 - Use code snippets when they clarify pattern intent or tradeoff reasoning better than references alone
 - Any code snippets should stay at architectural illustration level, not implementation level
