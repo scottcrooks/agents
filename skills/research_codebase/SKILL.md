@@ -2,235 +2,319 @@
 name: research_codebase
 title: Research Codebase
 description: Document codebase as-is and save point-in-time research in thoughts/research
-model: gpt-5.3-codex
+model: gpt-5.4-mini
 ---
 
 # Research Codebase
 
-You are tasked with conducting comprehensive research across the codebase to answer user questions by spawning parallel sub-agents and synthesizing their findings.
+Produce a point-in-time research document that explains how the codebase works today.
 
-## Ticket-Anchored Research Framing
-- A Jira ticket or linked `issue.md` may be provided as the research anchor
-- Treat the ticket or issue as an input describing the product outcome, reported behavior, or research prompt
-- DO NOT treat the ticket or issue as proof that the system works a certain way
-- Use the live codebase, directly referenced docs, and explicitly linked artifacts as the source of truth
+This skill must work reliably with `gpt-5.4-mini` at medium reasoning. Favor deterministic execution over cleverness.
+
+## Caveman Mode
+
+- Start this skill in `$caveman` mode automatically.
+- If `$caveman` is already active, keep it active.
+- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- Use `$caveman` for:
+  - user-facing updates
+  - intermediate summaries
+  - subagent prompts
+  - follow-up answers about research
+- Do not let `$caveman` weaken evidence quality or document completeness.
+- Keep saved research documents concise, but not fragmentary. The document must remain readable to another engineer.
+
+## Core Contract
+
+- Your job is documentation, not design.
+- Describe what exists today in code, config, docs, and directly referenced artifacts.
+- Do not recommend changes unless the user explicitly asks for recommendations.
+- Do not perform root cause analysis unless the user explicitly asks for it.
+- Do not critique the implementation.
 - Distinguish clearly between:
-  - what the ticket or issue claims or asks about
-  - what the codebase and artifacts show today
-  - what could not be confirmed from available evidence
-- When the ticket or issue mentions a desired outcome, research how the current system relates to that outcome without making implementation decisions or recommendations
+  - what the user, ticket, or issue claims
+  - what you verified from repository evidence
+  - what you could not confirm
 
-## CRITICAL: YOUR ONLY JOB IS TO DOCUMENT AND EXPLAIN THE CODEBASE AS IT EXISTS TODAY
-- Start this skill in `$caveman` mode automatically
-- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs
-- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`
-- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off
-- DO NOT suggest improvements or changes unless the user explicitly asks for them
-- DO NOT perform root cause analysis unless the user explicitly asks for them
-- DO NOT propose future enhancements unless the user explicitly asks for them
-- DO NOT critique the implementation or identify problems
-- DO NOT recommend refactoring, optimization, or architectural changes
-- ONLY describe what exists, where it exists, how it works, and how components interact
-- You are creating a technical map/documentation of the existing system
+## Mini-Model Guard Rails
 
-## Initial Setup:
+These rules are mandatory. They exist to keep output consistent under a smaller model.
 
-When this command is invoked, respond with:
+1. Read directly mentioned files before doing anything else.
+2. Do lightweight local discovery yourself before spawning subagents.
+3. Use a checklist and complete steps in order.
+4. Never write the final document from memory alone. Base every section on collected evidence.
+5. Every factual claim in `Summary`, `Detailed Findings`, and `Code References` must cite at least one file path, and line numbers when practical.
+6. If evidence is missing, say `Could not confirm from available evidence.` Do not guess.
+7. Keep the document schema fixed. Do not add or remove top-level sections except where explicitly allowed below.
+8. Prefer 2-5 focused subagents over many vague ones.
+9. Wait for all subagents before synthesizing.
+10. Keep synthesis concrete. Avoid generic architecture prose that is not grounded in files.
+
+## Default User-Facing Behavior
+
+If the skill is invoked without a concrete research question, reply with exactly:
+
+```text
+Ready to research codebase. Send question, ticket, issue file, or area to inspect.
 ```
-I'm ready to research the codebase. Please provide your research question, Jira ticket, linked issue, or area of interest, and I'll analyze it by documenting the current implementation and related evidence.
+
+Then wait.
+
+If the user already provided a question, start immediately.
+
+## Required Workflow
+
+Follow these steps in order.
+
+### 1. Read Anchor Inputs First
+
+- If the user mentioned specific files, read them fully before any delegation.
+- If a Jira export, `issue.md`, spec, JSON file, or doc was provided, treat it as research framing input.
+- Do not treat tickets or issues as ground truth.
+- Extract:
+  - the research question
+  - any claimed behavior or desired outcome
+  - key nouns, components, and file paths to investigate
+
+### 2. Do Native Discovery
+
+Before using subagents:
+
+- Find the relevant files, directories, symbols, and tests yourself.
+- Build a short working map of likely evidence sources.
+- Prefer current code and directly referenced docs over old research notes.
+
+Do not search prior research unless the user explicitly asked you to use it.
+
+### 3. Make a Small Research Checklist
+
+Create a checklist for yourself covering:
+
+- anchor inputs read
+- primary code paths to inspect
+- supporting docs/config to inspect
+- subagent tasks to delegate
+- metadata gathering
+- document writing
+
+Keep the checklist short and execution-oriented.
+
+### 4. Delegate Focused Read-Only Research
+
+Use parallel subagents for bounded read-only tasks after native discovery.
+
+Preferred roles:
+
+- `codebase-analyzer`: explain how a specific component works
+- `codebase-pattern-finder`: find examples or usage sites of a known pattern
+- `thoughts-locator` or `thoughts-analyzer`: only if the user explicitly referenced prior research
+- `web-search-researcher`: only if the user explicitly asked for external research
+
+Rules for delegation:
+
+- Every subagent prompt must say the task is documentation-only.
+- Every subagent prompt must forbid recommendations and critiques.
+- Every subagent prompt must include `$caveman`.
+- Ask each subagent for:
+  - concrete findings
+  - file paths
+  - line numbers when available
+  - unresolved questions
+- Keep tasks narrow. Example: one subsystem, one flow, one pattern family.
+- Do not delegate the same question twice.
+
+Use this prompt shape:
+
+```text
+$caveman
+Document current implementation only. No recommendations, no critique.
+
+Research target: [component / flow / question]
+Focus: [what to verify]
+Return:
+- 3-7 concrete findings
+- file paths for each finding
+- line numbers when useful
+- any unconfirmed gaps
 ```
 
-Use `$caveman` tone for that response and for all follow-up user-facing updates.
-Persist that mode across later skill invocations unless the operator explicitly turns it off.
+### 5. Synthesize Only After All Research Completes
 
-Then wait for the user's research query.
+When all evidence is collected:
 
-## Steps to follow after receiving the research query:
+- prioritize live repository evidence
+- separate claims from verified behavior
+- collapse overlapping subagent findings
+- remove speculation
+- preserve only useful citations
 
-1. **Read any directly mentioned files first:**
-   - If the user mentions specific files (Jira exports, `issue.md`, tickets, docs, JSON), read them FULLY first
-   - **IMPORTANT**: Use the Read tool WITHOUT limit/offset parameters to read entire files
-   - **CRITICAL**: Read these files yourself in the main context before spawning any sub-tasks
-   - This ensures you have full context before decomposing the research
-   - If a ticket or `issue.md` is provided, extract the product outcome or reported behavior being investigated and use that to frame the research scope
-   - Keep a clear boundary between the ticket's statements and the codebase evidence you verify
+Before writing, confirm you can answer:
 
-2. **Analyze and decompose the research question:**
-   - Break down the user's query into composable research areas
-   - Take time to ultrathink about the underlying patterns, connections, and architectural implications the user might be seeking
-   - Treat "architectural implications" as research-scoping inputs only: they help determine what to inspect, not what to conclude or recommend
-   - Identify specific components, patterns, or concepts to investigate
-   - Create a research plan using TodoWrite to track all subtasks
-   - Consider which directories, files, or architectural patterns are relevant
+- What was asked?
+- What files prove the answer?
+- What remains unconfirmed?
 
-3. **Spawn parallel sub-agent tasks for comprehensive research:**
-   - Create multiple Task agents to research different aspects concurrently
-   - CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
-   - First, do lightweight native discovery yourself to identify the most relevant files, directories, and symbols
-   - Then use specialized agents for deeper focused research tasks:
+If any of those are unclear, do one more targeted pass before writing.
 
-   **For codebase research:**
-   - Use native Codex exploration and search to find where files and components live
-   - Use the **codebase-analyzer** agent to understand HOW specific code works (without critiquing it)
-   - Use the **codebase-pattern-finder** agent to find examples of existing patterns (without evaluating them)
+### 6. Gather Metadata
 
-   **IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements or identifying issues.
+From the repository root:
 
-   **For prior research documents:**
-   - Do not search for prior research by default
-   - Only read prior research if the user explicitly references a research file, tag, or specific prior document they want incorporated
-   - If prior research is explicitly referenced, treat it as optional supplemental input, not a discovery target
+- run `mono metadata`
+- collect current date/time with timezone
+- collect git commit hash
+- collect branch name
+- collect repository name
+- collect researcher name from metadata output if available
 
-   **For web research (only if user explicitly asks):**
-   - Use the **web-search-researcher** agent for external documentation and resources
-   - IF you use web-research agents, instruct them to return LINKS with their findings, and please INCLUDE those links in your final report
+Filename rules:
 
-   **For Jira tickets or linked issues (if relevant):**
-   - If a Jira ticket is provided directly in the prompt or as a file, read it first and use it as research framing input
-   - If a linked `issue.md` is provided, read it first and use it as research framing input
-   - Use ticket or issue details to identify relevant code paths, docs, and artifacts to inspect
-   - Do not assume the ticket or issue is accurate; verify its claims against the current codebase and related evidence
+- Write under `thoughts/research/`
+- Use `YYYY-MM-DD-ENG-XXXX-description.md` when a ticket exists
+- Use `YYYY-MM-DD-description.md` when no ticket exists
+- `description` must be short kebab-case and topic-specific
 
-   The key is to use these agents intelligently:
-   - Start with native exploration to find what exists
-   - Then use analyzer agents on the most promising findings to document how they work
-   - Run multiple agents in parallel when they're searching for different things
-   - Each agent knows its job - just tell it what you're looking for
-   - Don't write detailed prompts about HOW to search - the agents already know
-   - Remind agents they are documenting, not evaluating or improving
+Examples:
 
-4. **Wait for all sub-agents to complete and synthesize findings:**
-   - IMPORTANT: Wait for ALL sub-agent tasks to complete before proceeding
-   - Compile all sub-agent results
-   - Prioritize live codebase findings as primary source of truth
-   - Only incorporate prior research documents when the user explicitly referenced them
-   - Connect findings across different components
-   - Include specific file paths and line numbers for reference
-   - Highlight patterns, connections, and architectural decisions that are already embodied in code, configuration, docs, or referenced artifacts
-   - Clearly separate ticket or issue claims from observed implementation details
-   - Answer the user's specific questions with concrete evidence
+- `2025-01-08-ENG-1478-parent-child-tracking.md`
+- `2025-01-08-authentication-flow.md`
 
-5. **Gather metadata for the research document:**
-   - Run `mono metadata` from the repository root to generate all relevant metadata
-  - Filename: `thoughts/research/YYYY-MM-DD-ENG-XXXX-description.md`
-     - Format: `YYYY-MM-DD-ENG-XXXX-description.md` where:
-       - YYYY-MM-DD is today's date
-       - ENG-XXXX is the ticket number (omit if no ticket)
-       - description is a brief kebab-case description of the research topic
-     - Examples:
-       - With ticket: `2025-01-08-ENG-1478-parent-child-tracking.md`
-       - Without ticket: `2025-01-08-authentication-flow.md`
+### 7. Write the Research Document
 
-6. **Generate research document:**
-   - Use the metadata gathered in step 4
-   - Structure the document with YAML frontmatter followed by content:
-     ```markdown
-     ---
-     date: [Current date and time with timezone in ISO format]
-     researcher: [Researcher name from thoughts status]
-     git_commit: [Current commit hash]
-     branch: [Current branch name]
-     repository: [Repository name]
-     topic: "[User's Question/Topic]"
-     tags: [research, codebase, relevant-component-names]
-     status: complete
-     last_updated: [Current date in YYYY-MM-DD format]
-     last_updated_by: [Researcher name]
-     ---
+Use this exact top-level structure and order. Do not invent new top-level headings except optional sections explicitly marked below.
 
-     # Research: [User's Question/Topic]
+```markdown
+---
+date: [ISO timestamp with timezone]
+researcher: [name]
+git_commit: [commit hash]
+branch: [branch name]
+repository: [repository name]
+topic: "[user question or concise topic]"
+tags: [research, codebase, component-a, component-b]
+status: complete
+last_updated: [YYYY-MM-DD]
+last_updated_by: [name]
+---
 
-     **Date**: [Current date and time with timezone from step 4]
-     **Researcher**: [Researcher name from thoughts status]
-     **Git Commit**: [Current commit hash from step 4]
-     **Branch**: [Current branch name from step 4]
-     **Repository**: [Repository name]
+# Research: [topic]
 
-     ## Research Question
-     [Original user query]
+## Research Question
+[the user question in plain language]
 
-     ## Research Anchor
-     [Jira ticket, linked `issue.md`, or other input that framed the research, if applicable]
+## Research Anchor
+[ticket, issue file, or input that framed the investigation]
 
-     ## Summary
-     [High-level documentation of what was found, answering the user's question by describing what exists]
+## Summary
+- 4-8 bullets
+- each bullet must describe verified current behavior
+- each bullet must include at least one citation
 
-     ## Ticket or Issue Claims
-     [Only include this section if a Jira ticket or linked `issue.md` was provided. Summarize the relevant stated outcome, behavior, or request without endorsing it as fact.]
+## Ticket or Issue Claims
+[include only if a ticket or linked issue was provided]
+- claim 1
+- claim 2
 
-     ## Detailed Findings
+## Detailed Findings
 
-     ### [Component/Area 1]
-     - Description of what exists ([file.ext:line](link))
-     - How it connects to other components
-     - Current implementation details (without evaluation)
+### [Area 1]
+- what exists
+- how it behaves
+- where it connects
+- citations
 
-     ### [Component/Area 2]
-     ...
+### [Area 2]
+- what exists
+- how it behaves
+- where it connects
+- citations
 
-     ## Code References
-     - `path/to/file.py:123` - Description of what's there
-     - `another/file.ts:45-67` - Description of the code block
+## Code References
+- `path/to/file.ext:123` - what this evidence shows
+- `another/file.ts:45` - what this evidence shows
 
-     ## Architecture Documentation
-     [Current patterns, conventions, design implementations, and previously made architectural decisions found in the codebase or explicitly referenced artifacts]
+## Architecture Notes
+- current patterns or boundaries that are directly evidenced
+- current conventions that are directly evidenced
 
-     ## Referenced Prior Research
-     [Only include this section if the user explicitly referenced prior research documents]
-     - `thoughts/research/example.md` - Relevant point-in-time context explicitly requested by the user
+## Referenced Prior Research
+[include only if the user explicitly asked for prior research to be incorporated]
+- `thoughts/research/example.md` - why it was relevant
 
-     ## Open Questions
-     [Evidence gaps, ambiguities, or unanswered questions discovered during research. Do not include recommendations or speculative solutions.]
-     ```
+## Open Questions
+- unresolved item
+- `Could not confirm from available evidence.` when applicable
+```
 
-7. **Add GitHub permalinks (if applicable):**
-   - Check if on main branch or if commit is pushed: `git branch --show-current` and `git status`
-   - If on main/master or pushed, generate GitHub permalinks:
-     - Get repo info: `gh repo view --json owner,name`
-     - Create permalinks: `https://github.com/{owner}/{repo}/blob/{commit}/{file}#L{line}`
-   - Replace local file references with permalinks in the document
+Formatting rules:
 
-8. **Present findings:**
-   - Present a concise summary of findings to the user
-   - Include key file references for easy navigation
-   - Ask if they have follow-up questions or need clarification
+- Use short bullets, not long paragraphs.
+- Each `Detailed Findings` area should usually have 2-5 bullets.
+- Do not include recommendation language such as `should`, `could`, `better`, `improve`, or `fix` unless quoting user input.
+- `Architecture Notes` must describe observed patterns only.
+- `Open Questions` may be empty only if everything was fully confirmed. If empty, write `None.`
+- Terse writing is good. Missing evidence is not.
 
-9. **Handle follow-up questions:**
-   - If the user has follow-up questions, append to the same research document
-   - Update the frontmatter fields `last_updated` and `last_updated_by` to reflect the update
-   - Add `last_updated_note: "Added follow-up research for [brief description]"` to frontmatter
-   - Add a new section: `## Follow-up Research [timestamp]`
-   - Spawn new sub-agents as needed for additional investigation
-   - Continue updating the document and syncing
+### Evidence Rules
 
-## Important notes:
-- Always use parallel Task agents to maximize efficiency and minimize context usage
-- Always run fresh codebase research - never rely solely on existing research documents
-- Research is point-in-time by default
-- Do not search thoughts/ or prior research documents unless the user explicitly references them
-- Focus on finding concrete file paths and line numbers for developer reference
-- Research documents should be self-contained with all necessary context
-- Each sub-agent prompt should be specific and focused on read-only documentation operations
-- Every sub-agent prompt must explicitly include `$caveman` so terse mode is active from first response
-- Document cross-component connections and how systems interact
-- Include temporal context (when the research was conducted)
-- Link to GitHub when possible for permanent references
-- Keep the main agent focused on synthesis, not deep file reading
-- Have sub-agents document examples and usage patterns as they exist
-- **CRITICAL**: You and all sub-agents are documentarians, not evaluators
-- **REMEMBER**: Document what IS, not what SHOULD BE
-- **NO RECOMMENDATIONS**: Only describe the current state of the codebase
-- **Ticket discipline**: Jira tickets and linked `issue.md` files are framing inputs, not ground truth
-- **Evidence discipline**: Clearly distinguish between stated outcome, observed implementation, and unresolved questions
-- **File reading**: Always read mentioned files FULLY (no limit/offset) before spawning sub-tasks
-- **Critical ordering**: Follow the numbered steps exactly
-  - ALWAYS read mentioned files first before spawning sub-tasks (step 1)
-  - ALWAYS wait for all sub-agents to complete before synthesizing (step 4)
-  - ALWAYS gather metadata before writing the document (step 5 before step 6)
-  - NEVER write the research document with placeholder values
-- **Frontmatter consistency**:
-  - Always include frontmatter at the beginning of research documents
-  - Keep frontmatter fields consistent across all research documents
-  - Update frontmatter when adding follow-up research
-  - Use snake_case for multi-word field names (e.g., `last_updated`, `git_commit`)
-  - Tags should be relevant to the research topic and components studied
+- Cite local file paths throughout the document.
+- Add line numbers whenever practical.
+- If GitHub permalinks are available, you may include them in addition to local references, but do not block on this.
+- Never include a claim without supporting evidence.
+
+### Writing Standard
+
+The document must be useful to another engineer who has not read the conversation.
+
+That means it must be:
+
+- self-contained
+- point-in-time
+- explicit about evidence
+- explicit about uncertainty
+
+### Stop Conditions Before Saving
+
+Do not save the document until all are true:
+
+- the research question is stated clearly
+- all summary bullets are evidence-backed
+- ticket claims are separated from verified findings
+- code references are concrete
+- open questions are explicit rather than implied
+- metadata fields are filled with real values, not placeholders
+
+### 8. Present Findings to the User
+
+After saving the document:
+
+- give a concise summary
+- include the saved document path
+- mention 2-4 high-value file references
+- mention any key unresolved questions
+
+### 9. Follow-Up Research
+
+If the user asks a follow-up question on the same topic:
+
+- append to the same document
+- update `last_updated`
+- update `last_updated_by`
+- add `last_updated_note: "Added follow-up research for [brief description]"`
+- append a new section:
+
+```markdown
+## Follow-up Research [ISO timestamp]
+```
+
+- repeat the same evidence discipline for the follow-up section
+
+## Important Notes
+
+- Always do fresh codebase research.
+- Prior research is supplemental only when explicitly requested.
+- Keep the main agent focused on synthesis and coordination.
+- Use subagents for narrow deep dives, not for the whole task.
+- Document what is true now, not what might be true.
+- If a requested area cannot be verified, say so plainly.
