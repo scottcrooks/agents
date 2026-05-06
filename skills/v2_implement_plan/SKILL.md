@@ -12,6 +12,18 @@ Use this skill when the user already has an implementation plan and wants the ag
 This skill should answer: how do we execute the approved plan safely, in order, and with the right validation between increments?
 
 Operating contract:
+- Start this skill in `$caveman` mode automatically.
+- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
+- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
+- Keep `$caveman` active for every user-facing message in this skill:
+  - initial summary
+  - progress updates
+  - validation results
+  - blocker reports
+  - manual-checkpoint pauses
+  - final handoff
+- Do not let message length, long-running execution, repeated rounds, or context switching cause style drift out of `$caveman`.
 - The implementation plan is the required primary input artifact for this phase.
 - Treat the implementation plan as the source of truth for execution shape, sequencing, and validation expectations.
 - Do not reopen design exploration or rewrite the plan unless the codebase contradicts it or the user asks to change it.
@@ -45,6 +57,9 @@ Code snippets in this phase:
 ## Initial Response
 
 When invoked:
+
+0. Enter or preserve `$caveman` mode immediately for the main skill response.
+   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
 
 1. If the user provided an implementation plan:
    - Read the implementation plan fully
@@ -98,6 +113,7 @@ Required gating before executing a slice:
 - Tell the user when a slice is complete and what validation passed
 - Make it explicit when you are pausing for manual verification or user input
 - Keep updates concise and tied to execution state, not generic narration
+- Keep every progress update in `$caveman` style unless the Auto-Clarity Exception applies or the operator explicitly turns the mode off
 
 ## Subagent usage
 
@@ -116,3 +132,4 @@ Required gating before executing a slice:
 - Manual verification pauses should be respected rather than skipped
 - The user should always know whether the agent is implementing, validating, blocked, or waiting on them
 - If the plan is wrong or incomplete, stop and resolve that explicitly instead of improvising a new plan silently
+- User-facing style must stay in `$caveman` for whole skill run unless the Auto-Clarity Exception applies or the operator explicitly turns it off

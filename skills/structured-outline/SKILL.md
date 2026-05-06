@@ -10,6 +10,10 @@ Use this skill when the design has been chosen and the user wants the top-level 
 This skill should answer: what is the shape of the plan?
 
 Operating contract:
+- Start this skill in `$caveman` mode automatically.
+- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
+- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The design doc is the primary source artifact for this phase.
 - Preserve the chosen design as plan structure rather than re-evaluating architecture.
 - Preserve execution shape without introducing implementation detail.
@@ -52,6 +56,9 @@ Someone reading the result should understand the execution shape, but should not
 ## Initial Response
 
 When invoked:
+
+0. Enter or preserve `$caveman` mode immediately for the main skill response.
+   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
 
 1. If the user provided a design doc:
    - Read the design doc fully

@@ -10,12 +10,19 @@ Use this skill to turn research into a high-level design recommendation.
 Core question: what should we do, and why this approach over the alternatives?
 
 Operating contract:
+ - Start this skill in `$caveman` mode automatically.
+ - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
+ - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+ - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - A linked research doc is mandatory input for this skill.
 - Research is the authoritative boundary for scope and problem framing.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
 - This skill is discussion-first: do not jump straight to writing a design doc unless there is a concrete idea, proposed change, or design decision to evaluate.
-- If the user only supplies research and no actionable design question, ask for their idea before drafting anything.
+- The actionable design prompt may come from either:
+  - the user's stated outcome in chat
+  - a linked Jira ticket or issue that clearly describes the requested change or decision
+- If the user only supplies research and no actionable design question, and no linked Jira ticket or issue states the desired change clearly enough, ask for their idea before drafting anything.
 - This skill must make tradeoffs explicit: do not present conclusions as settled without showing what was considered, what was rejected, and why.
 - This skill must not write the design doc until the user has explicitly approved moving from discussion into artifact creation.
 
@@ -47,14 +54,18 @@ Code snippets in this phase:
 
 When invoked:
 
+0. Enter or preserve `$caveman` mode immediately for the main skill response.
+   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
+
 1. If the user provided research docs, tickets, or file paths:
    - Read them fully before doing anything else
    - Treat that research as the source of truth for problem framing
    - Do not rewrite or expand the research phase itself
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
    - After reading, determine whether there is an actual design decision to make
-   - If the research describes current state or background only, and the user has not stated what they want to change, ask for their idea instead of drafting a design doc
-   - Do not infer a proposed solution or fabricate a target decision merely because research was provided
+   - If a linked Jira ticket or issue clearly states the requested change, desired outcome, or decision to be made, treat that ticket or issue as the actionable design prompt
+   - If the research describes current state or background only, and neither the user nor a linked Jira ticket or issue has stated what should change, ask for their idea instead of drafting a design doc
+   - Do not infer a proposed solution or fabricate a target decision merely because research was provided; use only what is explicit in the user's request or linked Jira ticket or issue
 2. If no supporting context was provided, ask for:
    - The linked research document
    - Any constraints or non-goals
@@ -67,6 +78,7 @@ When invoked:
 Required gating before drafting:
 - You must have a linked research doc
 - You must know what is being proposed, changed, or decided
+  - This may come from the user's message or from a linked Jira ticket or issue
 - You must know the key tradeoffs to evaluate, either from the user or from follow-up discussion
 - If either is missing, ask concise questions and continue the design conversation before producing the artifact
 - You must have explicitly discussed the most relevant tradeoffs in the conversation
@@ -185,7 +197,7 @@ Produce the design document with this shape:
 - Use code snippets when they clarify pattern intent or tradeoff reasoning better than references alone
 - Any code snippets should stay at architectural illustration level, not implementation level
 - Do not finalize the design doc while required design decisions remain unresolved
-- Do not finalize the design doc if the user has not yet provided the idea, target change, or decision under discussion
+- Do not finalize the design doc if neither the user nor a linked Jira ticket or issue has provided the idea, target change, or decision under discussion
 - Do not finalize the design doc if tradeoffs were not explicitly covered
 - Do not finalize the design doc if multiple viable options were found but not presented to the user
 - Do not write the design doc without explicit user approval

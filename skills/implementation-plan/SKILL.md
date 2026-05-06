@@ -10,6 +10,10 @@ Use this skill when the user wants a fully executable implementation plan from a
 This skill should answer: exactly how do we execute this safely and verify it worked?
 
 Operating contract:
+- Start this skill in `$caveman` mode automatically.
+- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
+- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The structured outline is the required primary input artifact for this phase.
 - Expand the structured outline into a complete execution plan without re-opening design exploration.
 - Carry forward enough context that the final plan is self-sufficient during execution.
@@ -48,6 +52,9 @@ Code snippets in this phase:
 ## Initial Response
 
 When invoked:
+
+0. Enter or preserve `$caveman` mode immediately for the main skill response.
+   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
 
 1. If the user provided a structured outline:
    - Read the structured outline fully

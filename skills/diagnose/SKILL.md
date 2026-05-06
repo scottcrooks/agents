@@ -7,6 +7,13 @@ description: Disciplined diagnosis loop for hard bugs and performance regression
 
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
+## Mode Persistence
+
+- Start this skill in `$caveman` mode automatically.
+- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
+- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
+
 When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
 
 ## Phase 1 — Build a feedback loop
