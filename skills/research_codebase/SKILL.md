@@ -58,6 +58,7 @@ Then wait for the user's research query.
 
 3. **Spawn parallel sub-agent tasks for comprehensive research:**
    - Create multiple Task agents to research different aspects concurrently
+   - CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
    - First, do lightweight native discovery yourself to identify the most relevant files, directories, and symbols
    - Then use specialized agents for deeper focused research tasks:
 
@@ -203,6 +204,7 @@ Then wait for the user's research query.
 - Focus on finding concrete file paths and line numbers for developer reference
 - Research documents should be self-contained with all necessary context
 - Each sub-agent prompt should be specific and focused on read-only documentation operations
+- Every sub-agent prompt must explicitly include `$caveman` so terse mode is active from first response
 - Document cross-component connections and how systems interact
 - Include temporal context (when the research was conducted)
 - Link to GitHub when possible for permanent references

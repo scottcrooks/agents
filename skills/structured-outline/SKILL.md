@@ -85,6 +85,7 @@ Required gating before drafting:
 ### Subagent usage
 
 - This phase should usually work directly from the design doc without subagents
+- CRITICAL: If you spawn any subagent, include `$caveman` in its initial prompt/context
 - Only use a subagent if a narrowly scoped clarification is needed to preserve an important boundary, dependency, or pattern reference
 - If needed, prefer a single focused task that reports back with concise findings rather than broad exploration
 

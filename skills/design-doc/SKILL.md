@@ -106,6 +106,7 @@ Patterns are inputs to design evaluation in this phase.
 ### Subagent usage
 
 - Read directly provided critical artifacts yourself before spawning any subagents
+- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
 - Use subagents to preserve main-context focus by delegating narrow, specific documentation tasks
 - Prefer `codebase-pattern-finder` when you need concrete examples of an existing pattern or similar implementation
 - Prefer `codebase-analyzer` when you need a precise explanation of how a specific component or code path works

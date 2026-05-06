@@ -101,6 +101,7 @@ When invoked:
 ### Subagent usage
 
 - Read the structured outline yourself before spawning any subagents
+- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
 - Use subagents to preserve main-context focus by delegating narrow discovery tasks needed to make the plan executable
 - Prefer `codebase-pattern-finder` when you need concrete examples of existing implementation or test patterns to carry forward into the plan
 - Prefer `codebase-analyzer` when you need a precise explanation of a specific code path, integration point, or interface

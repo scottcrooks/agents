@@ -102,6 +102,7 @@ Required gating before executing a slice:
 ## Subagent usage
 
 - Read the implementation plan yourself before spawning any subagents
+- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
 - Use subagents only for narrow execution-support tasks such as finding an existing pattern, understanding a specific interface, or investigating a blocker
 - Prefer `codebase-pattern-finder` for concrete examples to follow during implementation
 - Prefer `codebase-analyzer` for precise explanations of current code behavior or integration points
