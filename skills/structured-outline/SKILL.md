@@ -17,8 +17,9 @@ Operating contract:
 - Do not broaden scope beyond what the design doc and research boundary establish.
 - A design doc alone is sufficient input to begin this phase.
 - If the design doc leaves any execution-shaping question unresolved, stop and ask the user before writing the outline.
-- Probe for execution approach when the design doc does not already make it clear how the work should be shaped.
-- Prefer vertical slices over horizontal layers unless the design doc or user explicitly calls for a different structure.
+- Default to vertical slices when the design doc does not already make the execution approach clear.
+- Only choose a non-vertical execution shape when there is a strong, explicit reason grounded in the design doc, hard constraints, or the nature of the work.
+- If a strong reason exists to avoid vertical slices, explain that reasoning briefly and ask the user for feedback before finalizing the outline.
 
 ## Boundaries
 
@@ -67,7 +68,6 @@ When invoked:
 Required gating before drafting:
 - You must know the selected design well enough to shape execution without re-deciding architecture
 - You must know the major sequencing and dependency assumptions needed to structure the outline
-- You must know whether the outline should be shaped as vertical slices or some other execution model when that choice materially affects the plan
 - If any execution-shaping question remains open, ask the user first instead of guessing
 
 ## Workflow
@@ -79,7 +79,8 @@ Required gating before drafting:
 - Compress design reasoning into execution shape rather than carrying forward full design detail
 - Identify any unresolved execution-shaping questions from the design doc, such as unclear phase boundaries, ambiguous dependencies, missing validation expectations, missing sequencing constraints, or unclear slice strategy
 - If those questions materially change the shape of the outline, stop and ask the user before continuing
-- If execution approach is not specified, ask whether the user wants vertical slices or another structure; if no contrary signal exists, recommend vertical slices because they support incremental stubs, proof-of-concept work, and validation along the way
+- If execution approach is not specified, assume vertical slices because they support incremental stubs, proof-of-concept work, and validation along the way
+- If the design doc or constraints strongly indicate a different structure, explain the reason briefly and ask the user for feedback before finalizing the outline
 
 ### Subagent usage
 
@@ -174,4 +175,5 @@ Produce the outline with this shape:
 - Do not write the outline if unresolved questions would materially change phase structure, ordering, dependencies, or validation areas
 - Do not write the outline if the execution approach is materially unclear
 - Prefer outlines that organize work as vertical slices with incremental validation unless there is a clear reason not to
+- When deviating from vertical slices, make that deviation explicit and ask the user for feedback before finalizing the outline
 - If the user wants executable steps next, hand off naturally to `implementation-plan`
