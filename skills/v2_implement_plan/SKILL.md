@@ -12,24 +12,14 @@ Use this skill when the user already has an implementation plan and wants the ag
 This skill should answer: how do we execute the approved plan safely, in order, and with the right validation between increments?
 
 Operating contract:
-- Start this skill in `$caveman` mode automatically.
-- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
-- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
-- Keep `$caveman` active for every user-facing message in this skill:
-  - initial summary
-  - progress updates
-  - validation results
-  - blocker reports
-  - manual-checkpoint pauses
-  - final handoff
-- Do not let message length, long-running execution, repeated rounds, or context switching cause style drift out of `$caveman`.
+- Canonical style rule: Always enable and use `$caveman` mode for this skill run, even if it was not active before invocation. Apply it before any analysis, reads, planning, execution, or tool calls, and keep it for every user-facing message (initial response, progress, validation, blockers, manual checkpoints, final handoff) and any spawned subagent prompts. Never leave `$caveman` mode during this skill.
+- Canonical manual-checkpoint rule: When the implementation plan defines a manual verification checkpoint, treat it as a hard gate. Stop and wait for explicit user confirmation in the conversation before any further coding, validation, or slice advancement.
 - The implementation plan is the required primary input artifact for this phase.
 - Treat the implementation plan as the source of truth for execution shape, sequencing, and validation expectations.
 - Do not reopen design exploration or rewrite the plan unless the codebase contradicts it or the user asks to change it.
 - Prefer vertical slices and execute one slice at a time.
-- Run automated validation at the slice boundaries described by the plan.
-- Pause for human verification when the plan calls for manual checkpoints or when user-visible behavior cannot be validated confidently by automation alone.
+- Run automated validation at the slice boundaries described by the plan. Plan checks must include applicable repository-standard checks.
+- Pause for human verification only when human input is required (for example: plan-defined manual checkpoints, ambiguity needing user decision, or contradiction/scope decision requiring confirmation).
 - Do not broaden scope beyond what the implementation plan, structured outline, design doc, and research boundary establish.
 
 The output of this skill is executed work in the repository, not a new planning artifact. The agent should keep the user informed, execute the plan incrementally, and stop at the right checkpoints.
@@ -39,8 +29,9 @@ The output of this skill is executed work in the repository, not a new planning 
 This skill should include:
 - Executing implementation steps from the approved plan
 - Reading upstream artifacts only as needed to recover context required for safe execution
-- Repo-derived automated checks
-- Manual verification pauses when appropriate
+- Plan-defined automated checks including applicable repo-standard checks
+- Manual verification pauses only when human input is required
+- Mandatory stop-and-wait behavior per the Canonical manual-checkpoint rule
 - Progress updates tied to slice completion and validation status
 
 This skill should not include:
@@ -48,6 +39,7 @@ This skill should not include:
 - Reopening design tradeoff discussions unless the codebase or user feedback makes the plan invalid
 - Expanding scope beyond the approved plan
 - Skipping validation to save time
+- Treating manual validation checkpoints as optional, implicit, or auto-approved (see Canonical manual-checkpoint rule)
 
 Code snippets in this phase:
 - Avoid long code samples in chat
@@ -59,13 +51,15 @@ Code snippets in this phase:
 When invoked:
 
 0. Enter or preserve `$caveman` mode immediately for the main skill response.
-   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
+   - This is required by the Canonical style rule in Operating contract.
+   - This happens before all other numbered steps in this section.
 
 1. If the user provided an implementation plan:
    - Read the implementation plan fully
    - Read the structured outline, design doc, or research only if the plan references them or if more context is needed to execute safely
    - Summarize the execution strategy briefly, including the slice order and validation model
-   - Begin execution from the first slice unless the plan requires a user checkpoint before coding
+   - Determine the current slice state (for resumed runs, validate which slice is currently active/incomplete before proceeding)
+   - Begin execution from the earliest incomplete slice unless the plan requires a user checkpoint before coding
 2. If no implementation plan was provided, ask for:
    - The implementation plan path
    - Any current execution status, such as partially completed slices or known blockers
@@ -82,7 +76,7 @@ Required gating before executing a slice:
 - Read the implementation plan fully before making changes
 - Identify the current slice, its dependencies, and its validation requirements
 - Pull forward only the context needed to execute the current slice safely
-- If prior slices appear already complete in the repo, verify that before skipping ahead
+- If prior slices appear already complete in the repo, verify that before skipping ahead (this is required to determine current slice on resumed runs)
 
 ### 2. Execute one slice at a time
 
@@ -94,11 +88,11 @@ Required gating before executing a slice:
 
 ### 3. Validate before advancing
 
-- Run the automated checks called for by the plan and any closely related repo-standard checks needed to catch obvious regressions
+- Run the automated checks called for by the plan, including applicable repo-standard checks
 - Report validation results clearly after each slice
 - If automated validation fails, fix the issue or explain the blocker before moving on
-- If the plan includes a manual verification checkpoint, stop after automated checks pass and ask the user to verify before continuing
-- If manual verification is appropriate even though the plan did not spell it out, explain why and ask before advancing
+- If the plan includes a manual verification checkpoint, apply the Canonical manual-checkpoint rule
+- If additional manual verification seems useful but is not required by the plan, report it as an optional recommendation and continue without pausing
 
 ### 4. Handle contradictions and ambiguity
 
@@ -113,7 +107,7 @@ Required gating before executing a slice:
 - Tell the user when a slice is complete and what validation passed
 - Make it explicit when you are pausing for manual verification or user input
 - Keep updates concise and tied to execution state, not generic narration
-- Keep every progress update in `$caveman` style unless the Auto-Clarity Exception applies or the operator explicitly turns the mode off
+- Keep every progress update in `$caveman` style (see Canonical style rule)
 
 ## Subagent usage
 
@@ -129,7 +123,9 @@ Required gating before executing a slice:
 - Work should follow the implementation plan's slice order unless there is a verified reason not to
 - Each slice should end with explicit validation status
 - Automated checks should come from the plan or the repository's real tooling, not generic guesses when better evidence exists
-- Manual verification pauses should be respected rather than skipped
+- Plan validation should include applicable repo-standard checks, not only ad hoc or partial checks
+- Manual verification pauses should occur only when human input is required
+- Manual checkpoints must follow the Canonical manual-checkpoint rule
 - The user should always know whether the agent is implementing, validating, blocked, or waiting on them
 - If the plan is wrong or incomplete, stop and resolve that explicitly instead of improvising a new plan silently
-- User-facing style must stay in `$caveman` for whole skill run unless the Auto-Clarity Exception applies or the operator explicitly turns it off
+- User-facing style must stay in `$caveman` for the whole skill run (see Canonical style rule)

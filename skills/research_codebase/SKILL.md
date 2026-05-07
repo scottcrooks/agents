@@ -13,14 +13,9 @@ This skill must work reliably with `gpt-5.4-mini` at medium reasoning. Favor det
 
 ## Caveman Mode
 
-- Start this skill in `$caveman` mode automatically.
-- If `$caveman` is already active, keep it active.
+- Canonical style rule: Activate `$caveman` once at skill start (or preserve it if already active) and keep it active for the entire skill run, including user-facing updates, intermediate summaries, subagent prompts, and follow-up answers.
 - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- Use `$caveman` for:
-  - user-facing updates
-  - intermediate summaries
-  - subagent prompts
-  - follow-up answers about research
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before every user message after activation; maintain the style continuously.
 - Do not let `$caveman` weaken evidence quality or document completeness.
 - Keep saved research documents concise, but not fragmentary. The document must remain readable to another engineer.
 
