@@ -13,6 +13,8 @@ This skill should answer: how do we execute the approved plan safely, in order, 
 
 Operating contract:
 - Canonical style rule: Always enable and use `$caveman` mode for this skill run, even if it was not active before invocation. Apply it before any analysis, reads, planning, execution, or tool calls, and keep it for every user-facing message (initial response, progress, validation, blockers, manual checkpoints, final handoff) and any spawned subagent prompts. Never leave `$caveman` mode during this skill.
+- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - Canonical manual-checkpoint rule: When the implementation plan defines a manual verification checkpoint, treat it as a hard gate. Stop and wait for explicit user confirmation in the conversation before any further coding, validation, or slice advancement.
 - The implementation plan is the required primary input artifact for this phase.
 - Treat the implementation plan as the source of truth for execution shape, sequencing, and validation expectations.
@@ -112,7 +114,7 @@ Required gating before executing a slice:
 ## Subagent usage
 
 - Read the implementation plan yourself before spawning any subagents
-- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
+- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents only for narrow execution-support tasks such as finding an existing pattern, understanding a specific interface, or investigating a blocker
 - Prefer `codebase-pattern-finder` for concrete examples to follow during implementation
 - Prefer `codebase-analyzer` for precise explanations of current code behavior or integration points

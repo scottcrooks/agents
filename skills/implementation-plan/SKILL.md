@@ -12,9 +12,11 @@ This skill should answer: exactly how do we execute this safely and verify it wo
 Operating contract:
 - Start this skill in `$caveman` mode automatically.
 - FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
+- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
 - The very first user-facing line in this skill run must be in `$caveman` style.
 - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
 - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The structured outline is the required primary input artifact for this phase.
 - Expand the structured outline into a complete execution plan without re-opening design exploration.
@@ -22,7 +24,10 @@ Operating contract:
 - Do not broaden scope beyond what the upstream artifacts and research boundary establish.
 - Prefer vertical execution slices over horizontal layer-by-layer plans unless the upstream artifacts explicitly require another structure.
 - Build validation into the plan between slices so each major increment is tested before moving on.
-- Include manual verification checkpoints when human confirmation is the safest or clearest way to validate behavior.
+- Prefer automated checkpoints as the default verification path for every slice.
+- Continue executing as many slices as can be validated automatically before handing back for human verification.
+- Only require human verification when automation is genuinely insufficient for the risk being managed.
+- When human verification is required, include exact verification instructions, expected outcomes, and the reason automation does not fully cover that slice.
 
 The output of this skill must be fully executable without requiring the reader to consult the design doc, structured outline, or research during execution. Any context needed to execute safely should be carried forward into the plan itself.
 
@@ -37,7 +42,8 @@ This skill should include:
 - Concrete targets such as files, components, interfaces, and integration points when relevant to execution
 - Automated validation steps derived from the repository where possible
 - Vertical slices or similarly incremental execution chunks when the work can be structured that way
-- Manual verification checkpoints where user-visible behavior, workflows, or operational outcomes need human confirmation
+- Manual verification checkpoints only where user-visible behavior, workflows, or operational outcomes cannot be covered sufficiently by automation
+- Detailed human verification instructions whenever a manual checkpoint is included
 
 This skill may include:
 - Concrete validation activities such as verifying behaviors, confirming edge cases, and regression-testing affected pathways
@@ -89,6 +95,7 @@ When invoked:
 - Prefer end-to-end vertical slices that deliver a thin but testable increment before expanding breadth
 - Avoid defaulting to horizontal sequencing like database first, then services, then frontend, unless the upstream artifacts explicitly require that shape
 - Make each slice small enough that verification can happen before the next slice begins
+- Prefer grouping consecutive slices under agent execution when their checkpoints can be satisfied automatically without operator intervention
 
 ### 3. Define verification
 
@@ -98,20 +105,30 @@ When invoked:
 - Look for checks that are common for the tech stack in use
 - Prefer checks defined in repository sources such as `README`, `Makefile`, `package.json`, language-specific project files, or similar project entry points
 - If the repository does not define checks explicitly, infer the most likely automated validation based on the tech stack and existing conventions
+- Default to automated validation per slice before proposing any manual checkpoint
+- Treat missing automation as a gap to close when it is realistic to add or adapt a test, script, fixture, or command within the slice
 - State specific test activities such as:
   - Verify X behavior
   - Confirm Y edge case
   - Regression-test Z pathway
 - Include manual or automated verification guidance where relevant
 - State success criteria clearly enough that the implementer can tell whether the change is complete
-- Prefer automated checks after each slice where possible
-- Add manual verification checkpoints after slices when correctness depends on user-visible behavior, cross-system effects, or subjective confirmation that automation alone will not cover well
+- Prefer automated checks after each slice and call out the exact command, test target, or script to run
+- Add manual verification checkpoints only when correctness depends on user-visible behavior, cross-system effects, or subjective confirmation that automation alone will not cover well
+- Defer handoff for human verification until the latest safe slice boundary, so the agent completes as much implementation work as possible first
+- For each manual checkpoint, state:
+  - Why human verification is still required
+  - Prerequisites or setup data
+  - Exact operator actions in order
+  - Expected results and failure signals
+  - Whether the checkpoint is blocking for the next slice
 - Make it clear which validation happens before proceeding to the next slice
+- Make it clear whether the agent should continue automatically after a checkpoint or pause for operator confirmation
 
 ### Subagent usage
 
 - Read the structured outline yourself before spawning any subagents
-- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
+- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents to preserve main-context focus by delegating narrow discovery tasks needed to make the plan executable
 - Prefer `codebase-pattern-finder` when you need concrete examples of existing implementation or test patterns to carry forward into the plan
 - Prefer `codebase-analyzer` when you need a precise explanation of a specific code path, integration point, or interface
@@ -151,6 +168,7 @@ Produce the implementation plan with this shape:
 ## Execution Strategy
 - [Vertical slices or other chosen structure]
 - [Why this execution shape reduces risk]
+- [Why human handoff occurs at this boundary instead of earlier]
 
 ## Execution Slices
 1. [Slice]
@@ -158,13 +176,13 @@ Produce the implementation plan with this shape:
    - Concrete implementation steps
    - Dependencies or file/component touchpoints
    - Automated validation
-   - Manual verification checkpoint if needed
+   - Manual verification checkpoint if needed, with exact operator instructions
 2. [Slice]
    - Objective
    - Concrete implementation steps
    - Dependencies or file/component touchpoints
    - Automated validation
-   - Manual verification checkpoint if needed
+   - Manual verification checkpoint if needed, with exact operator instructions
 
 ## Implementation Details
 - [Specific component or file area and what changes]
@@ -180,7 +198,7 @@ Produce the implementation plan with this shape:
 ## Testing Coverage
 - [Unit or component coverage]
 - [Integration or end-to-end coverage]
-- [Manual validation if needed]
+- [Manual validation only if automation is insufficient, with detailed operator instructions]
 - [Automated checks derived from README, Makefile, package.json, or equivalent repo sources]
 
 ## Pattern Application
@@ -194,9 +212,11 @@ Produce the implementation plan with this shape:
 - Sequencing should reduce risk and make validation possible after each major change
 - Verification should be specific enough to detect regressions
 - Automated validation should come from the repository's actual tooling and conventions whenever possible
+- Each slice should have an explicit automated checkpoint unless the plan explains why that is not possible
+- The plan should maximize uninterrupted agent execution and avoid handing back to a human until a real human-only gate is reached
 - The output should include implementation details, execution order, verification steps, and explicit testing coverage
 - Any code snippets should clarify execution-critical details or referenced pattern application without replacing the plan with a full patch
 - The reader should not need any other artifact to execute the plan safely
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
 - Prefer plans that move in vertical, testable slices with validation between increments
-- Include manual verification checkpoints where appropriate instead of pretending automation fully covers the risk
+- Include manual verification checkpoints only where appropriate, and make them precise enough that another operator can execute them without improvising

@@ -12,9 +12,11 @@ Core question: what should we do, and why this approach over the alternatives?
 Operating contract:
  - Start this skill in `$caveman` mode automatically.
  - FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
+ - Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
  - The very first user-facing line in this skill run must be in `$caveman` style.
  - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
  - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+ - Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
  - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - A linked research doc is mandatory input for this skill.
 - Research is the authoritative boundary for scope and problem framing.
@@ -121,7 +123,7 @@ Patterns are inputs to design evaluation in this phase.
 ### Subagent usage
 
 - Read directly provided critical artifacts yourself before spawning any subagents
-- CRITICAL: Every spawned subagent must have `$caveman` enabled in its initial prompt/context
+- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents to preserve main-context focus by delegating narrow, specific documentation tasks
 - Prefer `codebase-pattern-finder` when you need concrete examples of an existing pattern or similar implementation
 - Prefer `codebase-analyzer` when you need a precise explanation of how a specific component or code path works

@@ -10,8 +10,11 @@ A discipline for hard bugs. Skip phases only when explicitly justified.
 ## Mode Persistence
 
 - Start this skill in `$caveman` mode automatically.
+- FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
+- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
 - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
 - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 
 When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.

@@ -12,9 +12,11 @@ This skill should answer: what is the shape of the plan?
 Operating contract:
 - Start this skill in `$caveman` mode automatically.
 - FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
+- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
 - The very first user-facing line in this skill run must be in `$caveman` style.
 - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
 - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The design doc is the primary source artifact for this phase.
 - Preserve the chosen design as plan structure rather than re-evaluating architecture.
@@ -95,7 +97,7 @@ Required gating before drafting:
 ### Subagent usage
 
 - This phase should usually work directly from the design doc without subagents
-- CRITICAL: If you spawn any subagent, include `$caveman` in its initial prompt/context
+- CRITICAL: If you spawn any subagent, activate caveman once if needed, then maintain it implicitly
 - Only use a subagent if a narrowly scoped clarification is needed to preserve an important boundary, dependency, or pattern reference
 - If needed, prefer a single focused task that reports back with concise findings rather than broad exploration
 

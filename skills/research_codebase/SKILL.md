@@ -14,8 +14,9 @@ This skill must work reliably with `gpt-5.4-mini` at medium reasoning. Favor det
 ## Caveman Mode
 
 - Canonical style rule: Activate `$caveman` once at skill start (or preserve it if already active) and keep it active for the entire skill run, including user-facing updates, intermediate summaries, subagent prompts, and follow-up answers.
+- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
 - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- Do not repeatedly re-issue or prepend the literal `$caveman` token before every user message after activation; maintain the style continuously.
+- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - Do not let `$caveman` weaken evidence quality or document completeness.
 - Keep saved research documents concise, but not fragmentary. The document must remain readable to another engineer.
 
@@ -110,7 +111,7 @@ Rules for delegation:
 
 - Every subagent prompt must say the task is documentation-only.
 - Every subagent prompt must forbid recommendations and critiques.
-- Every subagent prompt must include `$caveman`.
+- Activate caveman for the subagent once if needed, then maintain it implicitly.
 - Ask each subagent for:
   - concrete findings
   - file paths
@@ -122,7 +123,6 @@ Rules for delegation:
 Use this prompt shape:
 
 ```text
-$caveman
 Document current implementation only. No recommendations, no critique.
 
 Research target: [component / flow / question]
