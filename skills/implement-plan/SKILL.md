@@ -1,5 +1,5 @@
 ---
-name: v2_implement_plan
+name: implement-plan
 title: V2 Implement Plan
 description: Execute an existing implementation plan slice-by-slice with validation and human checkpoints where required
 model: gpt-5.3-codex

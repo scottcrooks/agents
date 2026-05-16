@@ -1,5 +1,5 @@
 ---
-name: iterate_plan
+name: iterate-plan
 title: Iterate Plan
 description: Iterate on existing implementation plans with thorough research and updates
 model: gpt-5.3-codex
@@ -227,13 +227,13 @@ When spawning research sub-tasks:
 
 **Scenario 1: User provides everything upfront**
 ```
-User: /iterate_plan .thoughts/shared/plans/2025-10-16-feature.md - add phase for error handling
+User: /iterate-plan .thoughts/shared/plans/2025-10-16-feature.md - add phase for error handling
 Assistant: [Reads plan, researches error handling patterns, updates plan]
 ```
 
 **Scenario 2: User provides just plan file**
 ```
-User: /iterate_plan thoughts/shared/plans/2025-10-16-feature.md
+User: /iterate-plan thoughts/shared/plans/2025-10-16-feature.md
 Assistant: I've found the plan. What changes would you like to make?
 User: Split Phase 2 into two phases - one for backend, one for frontend
 Assistant: [Proceeds with update]
@@ -241,7 +241,7 @@ Assistant: [Proceeds with update]
 
 **Scenario 3: User provides no arguments**
 ```
-User: /iterate_plan
+User: /iterate-plan
 Assistant: Which plan would you like to update? Please provide the path...
 User: thoughts/shared/plans/2025-10-16-feature.md
 Assistant: I've found the plan. What changes would you like to make?

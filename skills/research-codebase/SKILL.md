@@ -1,5 +1,5 @@
 ---
-name: research_codebase
+name: research-codebase
 title: Research Codebase
 description: Document codebase as-is and save point-in-time research in thoughts/research
 model: gpt-5.4-mini

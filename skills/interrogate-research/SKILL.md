@@ -126,7 +126,7 @@ Do not delegate the entire interrogation task.
 
 ## When To Stop And Recommend A New Research Pass
 
-Say a fresh `research_codebase` run is the better tool when:
+Say a fresh `research-codebase` run is the better tool when:
 
 - the existing research artifact is outdated relative to current code
 - the new questions span multiple areas not covered by the research

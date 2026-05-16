@@ -1,5 +1,5 @@
 ---
-name: create_handoff
+name: create-handoff
 description: Create handoff document for transferring work to another session
 ---
 
@@ -70,7 +70,7 @@ type: implementation_strategy
 Handoff created and synced! You can resume from this handoff in a new session with the following command:
 
 ```bash
-/resume_handoff path/to/handoff.md
+/resume-handoff path/to/handoff.md
 ```
 </template_response>
 
@@ -80,7 +80,7 @@ for example (between <example_response></example_response> XML tags - do NOT inc
 Handoff created and synced! You can resume from this handoff in a new session with the following command:
 
 ```bash
-/resume_handoff .thoughts/shared/handoffs/ENG-2166/2025-01-08_13-44-55_ENG-2166_create-context-compaction.md
+/resume-handoff .thoughts/shared/handoffs/ENG-2166/2025-01-08_13-44-55_ENG-2166_create-context-compaction.md
 ```
 </example_response>
 

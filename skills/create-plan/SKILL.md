@@ -1,9 +1,10 @@
 ---
-name: implementation-plan
+name: create-plan
+title: Create Plan
 description: Expand a structured outline into an executable implementation plan with sequencing, validation, and explicit testing coverage
 ---
 
-# Implementation Plan
+# Create Plan
 
 Use this skill when the user wants a fully executable implementation plan from an existing structured outline.
 
