@@ -9,19 +9,26 @@ EXECUTION_RULES = """Execute the implementation plan below.
 
 Execution rules:
 - Treat the embedded implementation plan as the source of truth for scope, sequencing, and validation.
-- Execute one slice at a time, starting with the earliest incomplete slice.
+- Read the companion status ledger referenced by `## Status Ledger Path` before broad repo exploration.
+- Treat that ledger as the source of truth for current slice state unless the repository clearly contradicts it.
+- Execute one slice at a time, starting with the ledger's `in_progress` slice or the next `pending` slice.
 - Do not re-plan or broaden scope.
+- Read linked research, design, or outline artifacts only when the active slice needs more context.
 - Run the automated validation listed for each slice before moving to the next one.
+- Update the status ledger after each slice start, validation result, blocker, manual checkpoint, or completion.
 - If a manual verification checkpoint is listed, stop and wait after automated checks pass.
 - If the plan is ambiguous in a way that affects execution, stop and ask instead of guessing.
 - If the codebase materially contradicts the plan, stop and report the contradiction with concrete file references.
+- If the codebase materially contradicts the ledger, stop and report the contradiction with concrete file references.
 - Keep progress updates concise and tied to slice completion, validation status, blockers, or explicit pause points.
 """
 
 
 REQUIRED_HINTS = (
     "## Scope",
-    "## Execution Context",
+    "## Input Artifacts",
+    "## Research Anchor",
+    "## Status Ledger Path",
     "## Execution Strategy",
     "## Execution Slices",
 )

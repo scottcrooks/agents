@@ -12,12 +12,10 @@ Use this skill when the user already has an implementation plan and wants the ag
 This skill should answer: how do we execute the approved plan safely, in order, and with the right validation between increments?
 
 Operating contract:
-- Canonical style rule: Always enable and use `$caveman` mode for this skill run, even if it was not active before invocation. Apply it before any analysis, reads, planning, execution, or tool calls, and keep it for every user-facing message (initial response, progress, validation, blockers, manual checkpoints, final handoff) and any spawned subagent prompts. Never leave `$caveman` mode during this skill.
-- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
-- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
 - Canonical manual-checkpoint rule: When the implementation plan defines a manual verification checkpoint, treat it as a hard gate. Stop and wait for explicit user confirmation in the conversation before any further coding, validation, or slice advancement.
 - The implementation plan is the required primary input artifact for this phase.
 - Treat the implementation plan as the source of truth for execution shape, sequencing, and validation expectations.
+- Treat the companion status ledger referenced by the plan as the source of truth for current slice state unless the repository clearly contradicts it.
 - Do not reopen design exploration or rewrite the plan unless the codebase contradicts it or the user asks to change it.
 - Prefer vertical slices and execute one slice at a time.
 - Run automated validation at the slice boundaries described by the plan. Plan checks must include applicable repository-standard checks.
@@ -30,6 +28,7 @@ The output of this skill is executed work in the repository, not a new planning 
 
 This skill should include:
 - Executing implementation steps from the approved plan
+- Reading and updating the companion status ledger
 - Reading upstream artifacts only as needed to recover context required for safe execution
 - Plan-defined automated checks including applicable repo-standard checks
 - Manual verification pauses only when human input is required
@@ -52,22 +51,21 @@ Code snippets in this phase:
 
 When invoked:
 
-0. Enter or preserve `$caveman` mode immediately for the main skill response.
-   - This is required by the Canonical style rule in Operating contract.
-   - This happens before all other numbered steps in this section.
-
 1. If the user provided an implementation plan:
    - Read the implementation plan fully
-   - Read the structured outline, design doc, or research only if the plan references them or if more context is needed to execute safely
+   - Read the companion status ledger path from the plan and read that ledger before broad repo exploration
+   - If the plan does not include a ledger path, derive one under `thoughts/plan-status/` from the plan file name before the first mutation
+   - Read the structured outline, design doc, or research only if the active slice references them or if more context is needed to execute safely
    - Summarize the execution strategy briefly, including the slice order and validation model
-   - Determine the current slice state (for resumed runs, validate which slice is currently active/incomplete before proceeding)
-   - Begin execution from the earliest incomplete slice unless the plan requires a user checkpoint before coding
+   - Determine the current slice state from the ledger first
+   - Begin execution from the ledger's `in_progress` slice or the next `pending` slice unless the plan requires a user checkpoint before coding
 2. If no implementation plan was provided, ask for:
    - The implementation plan path
    - Any current execution status, such as partially completed slices or known blockers
 
 Required gating before executing a slice:
 - You must understand the slice objective, the relevant files or components, and the validation expected before moving on
+- You must understand the current ledger state or derive and initialize the ledger before the first mutation
 - If the plan is ambiguous in a way that materially affects execution, stop and ask the user instead of guessing
 - If the codebase materially contradicts the plan, stop and explain the contradiction before proceeding
 
@@ -76,13 +74,17 @@ Required gating before executing a slice:
 ### 1. Read and lock context
 
 - Read the implementation plan fully before making changes
+- Read the companion status ledger before broad repo exploration
 - Identify the current slice, its dependencies, and its validation requirements
 - Pull forward only the context needed to execute the current slice safely
-- If prior slices appear already complete in the repo, verify that before skipping ahead (this is required to determine current slice on resumed runs)
+- Verify prior slices only if the ledger is missing, stale, or contradicted by the repository
+- If the plan does not include a ledger path, derive one under `thoughts/plan-status/` using the plan file name before the first code mutation
+- If the ledger is missing, initialize it before the first code mutation using the plan's slice list and ledger path
 
 ### 2. Execute one slice at a time
 
-- Start with the earliest incomplete slice
+- Start with the ledger's `in_progress` slice or the next `pending` slice
+- Mark the slice `in_progress` in the ledger before beginning implementation
 - Implement the concrete steps for that slice
 - Follow existing codebase patterns wherever the plan expects consistency
 - Keep the work scoped to the current slice unless a tightly related prerequisite is unavoidable
@@ -92,13 +94,15 @@ Required gating before executing a slice:
 
 - Run the automated checks called for by the plan, including applicable repo-standard checks
 - Report validation results clearly after each slice
+- Record validation results in the ledger after each slice boundary
 - If automated validation fails, fix the issue or explain the blocker before moving on
 - If the plan includes a manual verification checkpoint, apply the Canonical manual-checkpoint rule
+- Update the ledger before any manual verification pause with the current slice state, validation status, and next required action
 - If additional manual verification seems useful but is not required by the plan, report it as an optional recommendation and continue without pausing
 
 ### 4. Handle contradictions and ambiguity
 
-- If the implementation plan and codebase disagree, do not silently choose one
+- If the implementation plan, status ledger, and codebase disagree, do not silently choose one
 - Explain the contradiction with concrete file references
 - Propose the smallest plan adjustment needed to proceed
 - Wait for user confirmation when the adjustment changes scope, sequencing, or validation expectations
@@ -108,13 +112,12 @@ Required gating before executing a slice:
 - Tell the user which slice is in progress
 - Tell the user when a slice is complete and what validation passed
 - Make it explicit when you are pausing for manual verification or user input
+- Make it explicit when the ledger was updated and what the next recorded action is
 - Keep updates concise and tied to execution state, not generic narration
-- Keep every progress update in `$caveman` style (see Canonical style rule)
 
 ## Subagent usage
 
 - Read the implementation plan yourself before spawning any subagents
-- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents only for narrow execution-support tasks such as finding an existing pattern, understanding a specific interface, or investigating a blocker
 - Prefer `codebase-pattern-finder` for concrete examples to follow during implementation
 - Prefer `codebase-analyzer` for precise explanations of current code behavior or integration points
@@ -123,11 +126,13 @@ Required gating before executing a slice:
 ## Quality Bar
 
 - Work should follow the implementation plan's slice order unless there is a verified reason not to
+- Resume state should come from the ledger first, not broad repo rediscovery
 - Each slice should end with explicit validation status
+- Each slice boundary should update the ledger with status, validation, and next action
 - Automated checks should come from the plan or the repository's real tooling, not generic guesses when better evidence exists
 - Plan validation should include applicable repo-standard checks, not only ad hoc or partial checks
 - Manual verification pauses should occur only when human input is required
 - Manual checkpoints must follow the Canonical manual-checkpoint rule
 - The user should always know whether the agent is implementing, validating, blocked, or waiting on them
 - If the plan is wrong or incomplete, stop and resolve that explicitly instead of improvising a new plan silently
-- User-facing style must stay in `$caveman` for the whole skill run (see Canonical style rule)
+- Completed slices should not be broadly re-investigated unless the repository contradicts the ledger or the plan

@@ -11,26 +11,21 @@ Use this skill when the user wants a fully executable implementation plan from a
 This skill should answer: exactly how do we execute this safely and verify it worked?
 
 Operating contract:
-- Start this skill in `$caveman` mode automatically.
-- FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
-- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
-- The very first user-facing line in this skill run must be in `$caveman` style.
-- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
-- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
-- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The structured outline is the required primary input artifact for this phase.
 - Expand the structured outline into a complete execution plan without re-opening design exploration.
-- Carry forward enough context that the final plan is self-sufficient during execution.
+- Preserve explicit links to the structured outline, design doc, and research doc so execution can follow a stable artifact chain.
+- Carry forward only the execution-critical context from upstream artifacts; do not restate the entire research or design history.
 - Do not broaden scope beyond what the upstream artifacts and research boundary establish.
 - Prefer vertical execution slices over horizontal layer-by-layer plans unless the upstream artifacts explicitly require another structure.
+- Default to 3-7 thin execution slices. Prefer more small slices over fewer large ones when both are viable.
 - Build validation into the plan between slices so each major increment is tested before moving on.
 - Prefer automated checkpoints as the default verification path for every slice.
 - Continue executing as many slices as can be validated automatically before handing back for human verification.
 - Only require human verification when automation is genuinely insufficient for the risk being managed.
 - When human verification is required, include exact verification instructions, expected outcomes, and the reason automation does not fully cover that slice.
+- Reserve and record a companion status ledger path for resumed execution progress.
 
-The output of this skill must be fully executable without requiring the reader to consult the design doc, structured outline, or research during execution. Any context needed to execute safely should be carried forward into the plan itself.
+The output of this skill should be execution-sufficient with linked anchors. It must not force the implementer to rediscover the codebase, but it also should not inline the entire design doc or research when a compact digest plus explicit artifact links will do.
 
 ## Boundaries
 
@@ -39,10 +34,13 @@ This skill should include:
 - Sequencing
 - Validation steps
 - Specific test activities
-- Enough carried-forward context that the plan can be executed on its own
+- Explicit input artifact links for research, design, and outline
+- A compact research digest with only execution-critical findings
+- A companion status ledger path and initialized ledger stub
+- Enough carried-forward context that the plan can be executed safely without broad rediscovery
 - Concrete targets such as files, components, interfaces, and integration points when relevant to execution
 - Automated validation steps derived from the repository where possible
-- Vertical slices or similarly incremental execution chunks when the work can be structured that way
+- Thin vertical slices or similarly incremental execution chunks when the work can be structured that way
 - Manual verification checkpoints only where user-visible behavior, workflows, or operational outcomes cannot be covered sufficiently by automation
 - Detailed human verification instructions whenever a manual checkpoint is included
 
@@ -62,14 +60,11 @@ Code snippets in this phase:
 
 When invoked:
 
-0. Enter or preserve `$caveman` mode immediately for the main skill response.
-   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
-   - This happens before all other numbered steps in this section.
-
 1. If the user provided a structured outline:
    - Read the structured outline fully
    - Read the design doc as needed to recover rationale that was intentionally compressed out of the outline
    - Read research only as needed to confirm boundaries or constraints
+   - Preserve the outline path, design doc path, and research doc path for the final plan
    - Use the structured outline as the primary source for plan shape
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
 2. If no upstream artifact was provided, ask for:
@@ -82,6 +77,7 @@ When invoked:
 
 - Confirm the implementation target from the input artifacts
 - Preserve stated non-goals and constraints
+- Preserve the upstream artifact chain and make missing links a blocking error before finalizing the plan
 - Call out any missing prerequisite information before writing the plan
 - Pull forward any assumptions, constraints, and rationale that are required for safe execution
 
@@ -89,13 +85,16 @@ When invoked:
 
 - Break each phase into concrete implementation steps
 - Sequence the steps in a safe order
-- Name the concrete files, components, interfaces, integration points, dependencies, and risk areas where relevant
+- Name the concrete files, components, interfaces, integration points, dependencies, and risk areas only where they materially reduce execution risk
 - Expand the compressed outline into actionable detail without re-opening high-level design debates
-- Inline the critical context needed to perform the work so the reader does not need to refer back to prior artifacts
+- Inline only the critical context needed to perform the work safely; rely on linked upstream artifacts for deeper rationale
 - Make the execution order specific enough that an implementer can follow it directly
 - Prefer end-to-end vertical slices that deliver a thin but testable increment before expanding breadth
+- Default to 3-7 thin slices. Each slice should usually fit one focused implementation pass plus validation.
+- Prefer more small slices over fewer large slices when scope can be split cleanly
 - Avoid defaulting to horizontal sequencing like database first, then services, then frontend, unless the upstream artifacts explicitly require that shape
 - Make each slice small enough that verification can happen before the next slice begins
+- Each slice should include only the objective, key touchpoints, planned change, validation, completion signal, and any required manual checkpoint
 - Prefer grouping consecutive slices under agent execution when their checkpoints can be satisfied automatically without operator intervention
 
 ### 3. Define verification
@@ -126,10 +125,22 @@ When invoked:
 - Make it clear which validation happens before proceeding to the next slice
 - Make it clear whether the agent should continue automatically after a checkpoint or pause for operator confirmation
 
+### 4. Define the status ledger
+
+- Reserve a companion status ledger path under `thoughts/plan-status/` using the same date and descriptive name as the plan plus a `.status.md` suffix
+- Write an initialized ledger stub alongside the plan
+- Make the ledger the mutable execution-state artifact while keeping the plan mostly stable
+- Include per-slice entries in the ledger with:
+  - Slice name
+  - Status: `pending | in_progress | complete | blocked`
+  - Started at
+  - Completed at
+  - Validation result
+  - Notes limited to execution facts
+
 ### Subagent usage
 
 - Read the structured outline yourself before spawning any subagents
-- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents to preserve main-context focus by delegating narrow discovery tasks needed to make the plan executable
 - Prefer `codebase-pattern-finder` when you need concrete examples of existing implementation or test patterns to carry forward into the plan
 - Prefer `codebase-analyzer` when you need a precise explanation of a specific code path, integration point, or interface
@@ -137,7 +148,7 @@ When invoked:
 - Ask subagents to report back with concrete file:line references, relevant snippets, and concise summaries
 - Use subagent findings to refine concrete steps and repo-derived validation, then carry the needed context into the final plan
 
-### 4. Use patterns correctly
+### 5. Use patterns correctly
 
 Patterns become concrete only where needed in this phase.
 
@@ -153,6 +164,10 @@ Write the implementation plan to:
 - Use today's date in `YYYY-MM-DD` format
 - Use a short kebab-case descriptive name
 
+Also initialize the companion status ledger at:
+
+- `thoughts/plan-status/YYYY-MM-DD-descriptive-name.status.md`
+
 Produce the implementation plan with this shape:
 
 ```markdown
@@ -162,32 +177,39 @@ Produce the implementation plan with this shape:
 - [What is being implemented]
 - [Non-goals or exclusions]
 
-## Execution Context
-- [Constraint that materially affects execution]
-- [Assumption or dependency the implementer must know]
+## Input Artifacts
+- Research: [path]
+- Design Doc: [path]
+- Structured Outline: [path]
+
+## Research Anchor
+- [4-8 execution-critical findings carried forward from research]
+- [Critical citation or concrete reference]
+- [Explicit scope boundary inherited from research]
+
+## Status Ledger Path
+- `thoughts/plan-status/YYYY-MM-DD-descriptive-name.status.md`
 
 ## Execution Strategy
 - [Vertical slices or other chosen structure]
-- [Why this execution shape reduces risk]
+- [Why this thin-slice shape reduces risk]
 - [Why human handoff occurs at this boundary instead of earlier]
 
 ## Execution Slices
 1. [Slice]
    - Objective
-   - Concrete implementation steps
-   - Dependencies or file/component touchpoints
+   - Key touchpoints
+   - Planned change
    - Automated validation
+   - Completion signal
    - Manual verification checkpoint if needed, with exact operator instructions
 2. [Slice]
    - Objective
-   - Concrete implementation steps
-   - Dependencies or file/component touchpoints
+   - Key touchpoints
+   - Planned change
    - Automated validation
+   - Completion signal
    - Manual verification checkpoint if needed, with exact operator instructions
-
-## Implementation Details
-- [Specific component or file area and what changes]
-- [Integration point or dependency]
 
 ## Cross-Slice Validation
 - Verify [X behavior]
@@ -207,17 +229,48 @@ Produce the implementation plan with this shape:
 - [How it changes execution decisions]
 ```
 
+Initialize the companion status ledger with this shape:
+
+```markdown
+# Plan Status: [Topic]
+
+## Metadata
+- Plan: [path]
+- Research: [path]
+- Overall status: `not_started`
+- Current slice: [first slice]
+- Last completed slice: none
+- Next action: [start slice 1]
+- Last updated: [ISO timestamp]
+
+## Slice Status
+1. [Slice]
+   - Status: `pending`
+   - Started at: not started
+   - Completed at: not completed
+   - Validation: not run
+   - Notes: none
+2. [Slice]
+   - Status: `pending`
+   - Started at: not started
+   - Completed at: not completed
+   - Validation: not run
+   - Notes: none
+```
+
 ## Quality Bar
 
 - The plan should be executable without inventing missing steps
+- Preserve the research, design, and outline links explicitly so execution has a deterministic artifact chain
 - Sequencing should reduce risk and make validation possible after each major change
 - Verification should be specific enough to detect regressions
 - Automated validation should come from the repository's actual tooling and conventions whenever possible
 - Each slice should have an explicit automated checkpoint unless the plan explains why that is not possible
+- Default to 3-7 thin slices with minimal repeated context and only execution-critical detail
 - The plan should maximize uninterrupted agent execution and avoid handing back to a human until a real human-only gate is reached
 - The output should include implementation details, execution order, verification steps, and explicit testing coverage
 - Any code snippets should clarify execution-critical details or referenced pattern application without replacing the plan with a full patch
-- The reader should not need any other artifact to execute the plan safely
+- The plan and ledger together should let an implementer resume without broad rediscovery
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
 - Prefer plans that move in vertical, testable slices with validation between increments
 - Include manual verification checkpoints only where appropriate, and make them precise enough that another operator can execute them without improvising

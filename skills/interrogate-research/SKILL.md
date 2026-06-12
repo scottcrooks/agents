@@ -11,14 +11,6 @@ Use an existing research artifact as the entrypoint for follow-up questions abou
 
 This skill is for analysis only. It exists to avoid re-exploring unrelated parts of the repository when grounded research already exists, even if that research was produced in another context window or another workflow.
 
-## Caveman Mode
-
-- Canonical style rule: Activate `$caveman` once at skill start (or preserve it if already active) and keep it active for the entire skill run, including user-facing updates, intermediate summaries, subagent prompts, and follow-up answers.
-- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
-- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
-- Do not let `$caveman` reduce evidence quality or scope discipline.
-
 ## Core Contract
 
 - Start from one or more existing research artifacts.
@@ -99,7 +91,6 @@ Use subagents only when a question needs targeted read-only verification that ca
 
 If you delegate:
 
-- activate caveman for the subagent once if needed, then maintain it implicitly
 - say the task is analysis only
 - forbid implementation and recommendations
 - pass the research artifact path or excerpt and the exact question subset
@@ -116,7 +107,6 @@ Do not delegate the entire interrogation task.
 ## Output Rules
 
 - Be concise.
-- Keep caveman style active for the full response.
 - Stay anchored to the user's questions.
 - Prefer bullets grouped by question.
 - Call out drift explicitly:

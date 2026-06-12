@@ -10,16 +10,9 @@ Use this skill to turn research into a high-level design recommendation.
 Core question: what should we do, and why this approach over the alternatives?
 
 Operating contract:
- - Start this skill in `$caveman` mode automatically.
- - FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
- - Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
- - The very first user-facing line in this skill run must be in `$caveman` style.
- - If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
- - Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
- - Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
- - If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - A linked research doc is mandatory input for this skill.
 - Research is the authoritative boundary for scope and problem framing.
+- The resulting design doc must preserve an explicit link to the research artifact so later phases can follow the same grounding chain.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
 - This skill is discussion-first: do not jump straight to writing a design doc unless there is a concrete idea, proposed change, or design decision to evaluate.
@@ -33,7 +26,9 @@ Operating contract:
 ## Boundaries
 
 This skill should include:
+- Explicit input artifact links for downstream phases
 - Problem framing derived from the supplied research
+- Research-derived constraints that shape the design
 - Constraints that materially affect the solution
 - Candidate approaches
 - A recommended approach
@@ -58,13 +53,10 @@ Code snippets in this phase:
 
 When invoked:
 
-0. Enter or preserve `$caveman` mode immediately for the main skill response.
-   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
-   - This happens before all other numbered steps in this section.
-
 1. If the user provided research docs, tickets, or file paths:
    - Read them fully before doing anything else
    - Treat that research as the source of truth for problem framing
+   - Preserve the research artifact path for the final design doc
    - Do not rewrite or expand the research phase itself
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
    - After reading, determine whether there is an actual design decision to make
@@ -94,6 +86,7 @@ Required gating before drafting:
 
 ### 1. Establish the problem from research
 
+- Preserve the research artifact path and any ticket or issue path that materially framed the work
 - Summarize the problem the research actually supports
 - Pull out constraints, non-goals, and assumptions
 - Identify the decisions that still need to be made
@@ -123,7 +116,6 @@ Patterns are inputs to design evaluation in this phase.
 ### Subagent usage
 
 - Read directly provided critical artifacts yourself before spawning any subagents
-- CRITICAL: Activate caveman for a spawned subagent once if needed, then maintain it implicitly
 - Use subagents to preserve main-context focus by delegating narrow, specific documentation tasks
 - Prefer `codebase-pattern-finder` when you need concrete examples of an existing pattern or similar implementation
 - Prefer `codebase-analyzer` when you need a precise explanation of how a specific component or code path works
@@ -163,11 +155,18 @@ Produce the design document with this shape:
 ```markdown
 # Design Doc: [Topic]
 
+## Input Artifacts
+- Research: [path]
+- Ticket/Issue: [path, if applicable]
+
 ## Problem Framing
 - [What the research says we need to solve]
 
+## Research-Derived Constraints
+- [Constraint from research]
+
 ## Constraints
-- [Constraint]
+- [Additional design constraint]
 
 ## Candidate Approaches
 1. [Approach]
@@ -196,6 +195,7 @@ Produce the design document with this shape:
 ## Quality Bar
 
 - Keep the artifact focused on solution choice and rationale
+- Preserve the research grounding chain with an explicit `## Input Artifacts` section
 - Every recommendation should trace back to research, constraints, or observed patterns
 - Refuse to proceed if no linked research doc was provided
 - Avoid implementation detail unless it is necessary to explain a tradeoff

@@ -10,15 +10,8 @@ Use this skill when the design has been chosen and the user wants the top-level 
 This skill should answer: what is the shape of the plan?
 
 Operating contract:
-- Start this skill in `$caveman` mode automatically.
-- FIRST ACTION: enable/preserve `$caveman` before any analysis, file reads, planning, or tool calls.
-- Emit the literal `$caveman` token at most once per agent session. After activation, maintain the style implicitly.
-- The very first user-facing line in this skill run must be in `$caveman` style.
-- If `$caveman` is already active from earlier context, preserve it through this skill and across later skill handoffs.
-- Do not turn `$caveman` off unless the operator explicitly says `stop caveman` or `normal mode`.
-- Do not repeatedly re-issue or prepend the literal `$caveman` token before later messages, checklists, summaries, or prompt templates.
-- If the operator asks for more detail, provide it in `$caveman` style unless they explicitly turn the mode off.
 - The design doc is the primary source artifact for this phase.
+- The resulting outline must preserve explicit links to both the design doc and the research doc so later phases can follow the artifact chain without rediscovery.
 - Preserve the chosen design as plan structure rather than re-evaluating architecture.
 - Preserve execution shape without introducing implementation detail.
 - Carry forward relevant pattern references as guidance for the eventual implementation plan.
@@ -32,8 +25,10 @@ Operating contract:
 ## Boundaries
 
 This skill should include:
+- Explicit input artifact links for downstream phases
 - Major phases or workstreams
 - High-level ordering and dependencies
+- Execution-shaping constraints inherited from research and design
 - Validation areas
 - What behaviors and user-visible outcomes will be tested
 - Reviewable test case shape expressed in a BDD style when helpful
@@ -61,12 +56,10 @@ Someone reading the result should understand the execution shape, but should not
 
 When invoked:
 
-0. Enter or preserve `$caveman` mode immediately for the main skill response.
-   - Carry `$caveman` forward across any later skill invocation unless the operator explicitly turns it off.
-   - This happens before all other numbered steps in this section.
-
 1. If the user provided a design doc:
    - Read the design doc fully
+   - Preserve the design doc path for the final outline
+   - Preserve the linked research doc path for the final outline
    - Read research only as needed to confirm scope boundaries or preserve critical constraints
    - Treat the design doc as the primary source artifact for this phase
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
@@ -79,6 +72,7 @@ When invoked:
 
 Required gating before drafting:
 - You must know the selected design well enough to shape execution without re-deciding architecture
+- You must know the design doc path and research doc path to preserve in the artifact chain
 - You must know the major sequencing and dependency assumptions needed to structure the outline
 - If any execution-shaping question remains open, ask the user first instead of guessing
 
@@ -86,6 +80,7 @@ Required gating before drafting:
 
 ### 1. Confirm the chosen design
 
+- Preserve the upstream artifact paths and carry forward only the constraints that shape execution
 - Extract the selected approach and the constraints that affect sequencing
 - Preserve any explicit decisions that change how work should be grouped
 - Compress design reasoning into execution shape rather than carrying forward full design detail
@@ -97,7 +92,6 @@ Required gating before drafting:
 ### Subagent usage
 
 - This phase should usually work directly from the design doc without subagents
-- CRITICAL: If you spawn any subagent, activate caveman once if needed, then maintain it implicitly
 - Only use a subagent if a narrowly scoped clarification is needed to preserve an important boundary, dependency, or pattern reference
 - If needed, prefer a single focused task that reports back with concise findings rather than broad exploration
 
@@ -107,6 +101,7 @@ Required gating before drafting:
 - Show dependencies and ordering at a high level
 - Keep granularity coarse enough that it describes structure, not implementation
 - Do not invent missing sequencing decisions just to complete the outline
+- When possible, shape the work so the later implementation plan can expand into 3-7 thin vertical slices rather than a few large phases
 - Prefer vertical-slice workstreams that each carry a thin end-to-end path through the system, along with any stub, proof-of-concept, or validation activity needed to de-risk that slice
 - Avoid defaulting to horizontal phases like database first, then services, then frontend, unless the user or design doc explicitly requires that structure
 
@@ -143,12 +138,20 @@ Produce the outline with this shape:
 ```markdown
 # Structured Outline: [Topic]
 
+## Input Artifacts
+- Research: [path]
+- Design Doc: [path]
+
 ## Selected Direction
 - [Chosen design summarized briefly]
+
+## Execution-Shaping Constraints
+- [Constraint inherited from research or design]
 
 ## Execution Approach
 - [Vertical slices or other chosen structure]
 - [Why this shape fits the work]
+- [How this shape supports thin execution slices later]
 
 ## Major Phases / Workstreams
 1. [Phase or workstream]
@@ -177,6 +180,7 @@ Produce the outline with this shape:
 
 ## Quality Bar
 
+- Preserve the artifact chain with explicit research and design doc links
 - Preserve execution shape without drifting into implementation
 - Keep sequencing explicit at the phase level
 - Make validation coverage visible even when details are deferred
@@ -188,5 +192,6 @@ Produce the outline with this shape:
 - Do not write the outline if unresolved questions would materially change phase structure, ordering, dependencies, or validation areas
 - Do not write the outline if the execution approach is materially unclear
 - Prefer outlines that organize work as vertical slices with incremental validation unless there is a clear reason not to
+- Prefer outlines that can naturally expand into 3-7 thin execution slices later
 - When deviating from vertical slices, make that deviation explicit and ask the user for feedback before finalizing the outline
 - If the user wants executable steps next, hand off naturally to `implementation-plan`
