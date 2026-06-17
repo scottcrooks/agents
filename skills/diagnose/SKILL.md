@@ -8,6 +8,8 @@ description: Disciplined diagnosis loop for hard bugs and performance regression
 A discipline for hard bugs. Skip phases only when explicitly justified.
 
 When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
+If `graphify-out/graph.json` exists in the repository root, prefer graphify first for codebase orientation, dependency tracing, call-path discovery, and narrowing the search space before broad filesystem searching.
+Use graphify as a discovery aid, not as proof of the diagnosis. Repros, instrumentation, fixes, and final claims still need to be verified against concrete repository files and runnable feedback loops.
 
 ## Phase 1 — Build a feedback loop
 

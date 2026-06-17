@@ -70,6 +70,9 @@ Follow these steps in order.
 
 Before using subagents:
 
+- If `graphify-out/graph.json` exists in the repository root, treat the graph as the preferred discovery surface for codebase orientation, architecture questions, file relationships, and likely evidence paths.
+- When graph data is present, start by using graphify to narrow the search space, identify relevant components, and trace connections before falling back to broad filesystem searching.
+- Use graphify for discovery, not as sole proof. Final claims in the research document still need citations to concrete repository files, and line numbers when practical.
 - Find the relevant files, directories, symbols, and tests yourself.
 - Build a short working map of likely evidence sources.
 - Prefer current code and directly referenced docs over old research notes.
@@ -300,6 +303,7 @@ If the user asks a follow-up question on the same topic:
 ## Important Notes
 
 - Always do fresh codebase research.
+- If a project graph already exists, prefer it during discovery to reduce blind searching.
 - Prior research is supplemental only when explicitly requested.
 - Keep the main agent focused on synthesis and coordination.
 - Use subagents for narrow deep dives, not for the whole task.
