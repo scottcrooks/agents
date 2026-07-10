@@ -15,13 +15,13 @@ Operating contract:
 - The resulting design doc must preserve an explicit link to the research artifact so later phases can follow the same grounding chain.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
-- This skill is discussion-first: do not jump straight to writing a design doc unless there is a concrete idea, proposed change, or design decision to evaluate.
+- This skill is artifact-first: when research and an actionable design prompt exist, write the best supported design doc, then ask for review.
 - The actionable design prompt may come from either:
   - the user's stated outcome in chat
   - a linked Jira ticket or issue that clearly describes the requested change or decision
 - If the user only supplies research and no actionable design question, and no linked Jira ticket or issue states the desired change clearly enough, ask for their idea before drafting anything.
 - This skill must make tradeoffs explicit: do not present conclusions as settled without showing what was considered, what was rejected, and why.
-- This skill must not write the design doc until the user has explicitly approved moving from discussion into artifact creation.
+- Use explicit assumptions and review questions instead of requiring a preliminary conversation when repository evidence supports a useful draft.
 
 ## Boundaries
 
@@ -76,11 +76,9 @@ Required gating before drafting:
 - You must have a linked research doc
 - You must know what is being proposed, changed, or decided
   - This may come from the user's message or from a linked Jira ticket or issue
-- You must know the key tradeoffs to evaluate, either from the user or from follow-up discussion
-- If either is missing, ask concise questions and continue the design conversation before producing the artifact
-- You must have explicitly discussed the most relevant tradeoffs in the conversation
-- If you found multiple viable options, you must have presented those options to the user before drafting
-- You must have explicit user approval to write the design document
+- If either required input is missing, ask only for the missing input
+- Derive key tradeoffs from research, constraints, and bounded pattern evidence when possible
+- Record uncertain priorities or assumptions in the document for review instead of blocking a useful draft
 
 ## Workflow
 
@@ -98,10 +96,9 @@ Required gating before drafting:
 - Compare them against the constraints from the research
 - Call out where an option introduces complexity, risk, or future maintenance cost
 - Explicitly state the tradeoffs between options, not just their standalone pros or cons
-- If one option is preferred only under certain priorities, surface that dependency and ask the user to choose the priority when it is not already clear
+- If one option is preferred only under certain priorities, state the assumed priority, explain its effect, and flag it for review
 - Do not collapse multiple plausible approaches into a single recommendation without first comparing them in plain language
-- If you find more than one viable option, present the options to the user explicitly before converging on a recommendation
-- Make the option review visible in the conversation, not just in the final document
+- Present viable options and their comparison in the design document before converging on a recommendation
 
 ### 3. Use patterns correctly
 
@@ -126,23 +123,19 @@ Patterns are inputs to design evaluation in this phase.
 ### 4. Resolve open questions
 
 - Resolve design questions wherever the research and bounded pattern evidence allow
-- If something remains unresolved, stop and ask only the specific question needed to make the design decision
-- Continue the design discussion until all design-relevant open questions are resolved
-- Do not carry unresolved questions into the final artifact unless the user explicitly wants a decision log with open items
-- Treat the interaction as iterative by default: discuss tradeoffs with the user when the recommendation depends on product intent, priorities, or ambiguous constraints
-- A research doc alone is not evidence that the user wants the design artifact immediately; if intent is missing, ask first
-- If the recommendation depends on choosing between competing values like speed, simplicity, consistency, flexibility, or operational risk, explicitly discuss that tradeoff with the user before finalizing the decision
+- When a reasonable default exists, state the assumption and its effect on the recommendation
+- Carry unresolved, non-blocking questions into `Assumptions / Questions for Review`
+- Ask before writing only when missing information makes any recommendation speculative or would require inventing the target change
+- Treat feedback after the first artifact as the default iteration point
 
-### 5. Get approval before writing
+### 5. Write, then request review
 
-- After discussing options and tradeoffs, summarize the recommended direction and the rejected alternatives in the conversation
-- Ask the user explicitly whether they want you to write the design doc now
-- Do not create or update `thoughts/designs/...` until the user answers yes or otherwise gives clear approval
-- If the user wants more discussion, continue iterating instead of writing
+- Write the design doc once required inputs exist and a defensible recommendation can be made
+- Include assumptions and focused review questions in the artifact
+- After saving, summarize the recommendation and rejected alternatives, provide the path, and ask for feedback
+- Apply subsequent feedback by updating the same artifact
 
 ## Output
-
-Only after explicit user approval:
 
 Write the design document to:
 
@@ -186,6 +179,10 @@ Produce the design document with this shape:
 ## Decisions / Resolved Questions
 - [Decision and rationale]
 
+## Assumptions / Questions for Review
+- [Assumption made to produce the draft]
+- [Focused question whose answer could change the recommendation]
+
 ## Referenced Patterns
 - [Pattern or file/reference]
 - [Why it applies or why it does not]
@@ -201,11 +198,10 @@ Produce the design document with this shape:
 - Avoid implementation detail unless it is necessary to explain a tradeoff
 - Use code snippets when they clarify pattern intent or tradeoff reasoning better than references alone
 - Any code snippets should stay at architectural illustration level, not implementation level
-- Do not finalize the design doc while required design decisions remain unresolved
+- Do not invent a target change or decision merely to produce a document
 - Do not finalize the design doc if neither the user nor a linked Jira ticket or issue has provided the idea, target change, or decision under discussion
-- Do not finalize the design doc if tradeoffs were not explicitly covered
-- Do not finalize the design doc if multiple viable options were found but not presented to the user
-- Do not write the design doc without explicit user approval
+- Cover tradeoffs explicitly in the artifact
+- Present multiple viable options in the artifact before recommending one
 - Recommendations must include at least one rejected alternative and the reason it was not chosen
 - Treat this document as compressed context for later phases rather than as an executable plan
 - If the user wants execution shape next, hand off naturally to `structured-outline`

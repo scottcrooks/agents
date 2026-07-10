@@ -1,15 +1,13 @@
 ---
 name: research-codebase
-title: Research Codebase
 description: Document codebase as-is and save point-in-time research in thoughts/research
-model: gpt-5.4-mini
 ---
 
 # Research Codebase
 
 Produce a point-in-time research document that explains how the codebase works today.
 
-This skill must work reliably with `gpt-5.4-mini` at medium reasoning. Favor deterministic execution over cleverness.
+Favor deterministic execution over cleverness.
 
 Keep saved research documents concise, but not fragmentary. The document must remain readable to another engineer.
 
@@ -20,14 +18,18 @@ Keep saved research documents concise, but not fragmentary. The document must re
 - Do not recommend changes unless the user explicitly asks for recommendations.
 - Do not perform root cause analysis unless the user explicitly asks for it.
 - Do not critique the implementation.
+- The only permitted repository write is the research document under `thoughts/research/`.
+- Never modify source code, tests, configuration, dependencies, generated files, or git state.
+- Never implement a fix or transition into implementation, even when the required change appears obvious.
+- If the user asks for implementation during research, record it as requested future work and finish the research artifact only.
 - Distinguish clearly between:
   - what the user, ticket, or issue claims
   - what you verified from repository evidence
   - what you could not confirm
 
-## Mini-Model Guard Rails
+## Deterministic Guard Rails
 
-These rules are mandatory. They exist to keep output consistent under a smaller model.
+These rules are mandatory. They keep output consistent across research-capable models.
 
 1. Read directly mentioned files before doing anything else.
 2. Do lightweight local discovery yourself before spawning subagents.
@@ -36,8 +38,8 @@ These rules are mandatory. They exist to keep output consistent under a smaller 
 5. Every factual claim in `Summary`, `Detailed Findings`, and `Code References` must cite at least one file path, and line numbers when practical.
 6. If evidence is missing, say `Could not confirm from available evidence.` Do not guess.
 7. Keep the document schema fixed. Do not add or remove top-level sections except where explicitly allowed below.
-8. Prefer 2-5 focused subagents over many vague ones.
-9. Wait for all subagents before synthesizing.
+8. Use focused subagents only when bounded parallel research materially improves coverage or context use.
+9. When subagents are used, wait for all of them before synthesizing.
 10. Keep synthesis concrete. Avoid generic architecture prose that is not grounded in files.
 
 ## Default User-Facing Behavior
@@ -92,9 +94,9 @@ Create a checklist for yourself covering:
 
 Keep the checklist short and execution-oriented.
 
-### 4. Delegate Focused Read-Only Research
+### 4. Delegate Focused Read-Only Research When Useful
 
-Use parallel subagents for bounded read-only tasks after native discovery.
+Use parallel subagents only for bounded read-only tasks that materially improve coverage or preserve main-context focus after native discovery. Skip delegation when direct inspection is sufficient.
 
 Preferred roles:
 
@@ -106,6 +108,7 @@ Preferred roles:
 Rules for delegation:
 
 - Every subagent prompt must say the task is documentation-only.
+- Every subagent prompt must forbid repository writes and implementation.
 - Every subagent prompt must forbid recommendations and critiques.
 - Ask each subagent for:
   - concrete findings

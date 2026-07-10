@@ -17,10 +17,10 @@ Operating contract:
 - Carry forward relevant pattern references as guidance for the eventual implementation plan.
 - Do not broaden scope beyond what the design doc and research boundary establish.
 - A design doc alone is sufficient input to begin this phase.
-- If the design doc leaves any execution-shaping question unresolved, stop and ask the user before writing the outline.
+- If the design doc leaves an execution-shaping question unresolved, use a conservative assumption when possible and expose it for review in the outline.
 - Default to vertical slices when the design doc does not already make the execution approach clear.
 - Only choose a non-vertical execution shape when there is a strong, explicit reason grounded in the design doc, hard constraints, or the nature of the work.
-- If a strong reason exists to avoid vertical slices, explain that reasoning briefly and ask the user for feedback before finalizing the outline.
+- If a strong reason exists to avoid vertical slices, explain that reasoning in the outline and ask for feedback after writing it.
 
 ## Boundaries
 
@@ -64,7 +64,7 @@ When invoked:
    - Treat the design doc as the primary source artifact for this phase
    - Do not broaden scope beyond what the research established unless the user explicitly asks for more research
    - Try to derive the outline directly from the design doc first
-   - If the design doc leaves unclear sequencing, dependency, validation, scope-boundary, or execution-approach questions that materially affect the outline, ask the user before drafting
+   - If the design doc leaves unclear sequencing, dependency, validation, scope-boundary, or execution-approach questions, use conservative assumptions where possible and expose them for review
 2. If no design context was provided, ask for:
    - The design doc
    - Any hard sequencing constraints
@@ -74,7 +74,7 @@ Required gating before drafting:
 - You must know the selected design well enough to shape execution without re-deciding architecture
 - You must know the design doc path and research doc path to preserve in the artifact chain
 - You must know the major sequencing and dependency assumptions needed to structure the outline
-- If any execution-shaping question remains open, ask the user first instead of guessing
+- Ask before writing only when no reasonable assumption can preserve the selected design and scope boundary
 
 ## Workflow
 
@@ -85,9 +85,9 @@ Required gating before drafting:
 - Preserve any explicit decisions that change how work should be grouped
 - Compress design reasoning into execution shape rather than carrying forward full design detail
 - Identify any unresolved execution-shaping questions from the design doc, such as unclear phase boundaries, ambiguous dependencies, missing validation expectations, missing sequencing constraints, or unclear slice strategy
-- If those questions materially change the shape of the outline, stop and ask the user before continuing
+- When a reasonable default exists, state it in `Assumptions / Questions for Review` and continue
 - If execution approach is not specified, assume vertical slices because they support incremental stubs, proof-of-concept work, and validation along the way
-- If the design doc or constraints strongly indicate a different structure, explain the reason briefly and ask the user for feedback before finalizing the outline
+- If the design doc or constraints strongly indicate a different structure, explain the reason in the outline and request feedback after saving
 
 ### Subagent usage
 
@@ -112,7 +112,7 @@ Required gating before drafting:
 - Frame validation so the reviewer can inspect test cases and overall system behavior, not just inferred unit-test coverage
 - Prefer BDD-style validation descriptions such as given/when/then or scenario-oriented outcome statements when that makes the review sharper
 - Do not include test code or exact commands
-- If required validation areas are unclear and that uncertainty would change the outline structure, ask the user before writing
+- If validation areas are unclear, choose conservative coverage, record the assumption, and request review after writing
 
 ### 4. Use patterns correctly
 
@@ -124,8 +124,6 @@ Patterns are guidance in this phase.
 - Do not convert pattern guidance into concrete edit steps here
 
 ## Output
-
-Only after required execution-shaping questions are resolved:
 
 Write the structured outline to:
 
@@ -172,6 +170,10 @@ Produce the outline with this shape:
 - [BDD-style behavior or scenario family to validate at a high level]
 - [What overall behavior the reviewer should inspect, independent of test implementation]
 
+## Assumptions / Questions for Review
+- [Execution-shaping assumption used in this draft]
+- [Focused question whose answer could change the outline]
+
 ## Pattern References
 - [Pattern]
 - [How it should guide the eventual plan]
@@ -189,9 +191,10 @@ Produce the outline with this shape:
 - Use code snippets only when they clarify pattern intent better than links alone
 - Do not include code snippets that would let the reader implement directly from the outline
 - Someone reading the outline should understand the shape of execution, but should not be able to implement directly from it
-- Do not write the outline if unresolved questions would materially change phase structure, ordering, dependencies, or validation areas
-- Do not write the outline if the execution approach is materially unclear
+- Record unresolved questions that could materially change phase structure, ordering, dependencies, or validation areas and make their effect explicit
+- Ask before writing only when resolving ambiguity would require inventing scope or contradicting the selected design
 - Prefer outlines that organize work as vertical slices with incremental validation unless there is a clear reason not to
 - Prefer outlines that can naturally expand into 3-7 thin execution slices later
-- When deviating from vertical slices, make that deviation explicit and ask the user for feedback before finalizing the outline
+- When deviating from vertical slices, make that deviation explicit and ask for feedback after writing the outline
+- After saving, provide the path, summarize key assumptions, and ask for feedback
 - If the user wants executable steps next, hand off naturally to `implementation-plan`

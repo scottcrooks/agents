@@ -1,0 +1,4 @@
+interface:
+  display_name: "Document Review"
+  short_description: "Review design docs and execution outlines"
+  default_prompt: "Use $document-review to review this workflow document and return a structured verdict."

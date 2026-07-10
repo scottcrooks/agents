@@ -1,6 +1,5 @@
 ---
 name: create-plan
-title: Create Plan
 description: Expand a structured outline into an executable implementation plan with sequencing, validation, and explicit testing coverage
 ---
 
@@ -140,13 +139,13 @@ When invoked:
 
 ### Subagent usage
 
-- Read the structured outline yourself before spawning any subagents
-- Use subagents to preserve main-context focus by delegating narrow discovery tasks needed to make the plan executable
-- Prefer `codebase-pattern-finder` when you need concrete examples of existing implementation or test patterns to carry forward into the plan
-- Prefer `codebase-analyzer` when you need a precise explanation of a specific code path, integration point, or interface
-- Give subagents tightly scoped tasks such as "find existing test patterns for this workflow" or "analyze how this integration currently works"
-- Ask subagents to report back with concrete file:line references, relevant snippets, and concise summaries
-- Use subagent findings to refine concrete steps and repo-derived validation, then carry the needed context into the final plan
+- Do not spawn subagents by default. Build the plan from the structured outline, linked upstream artifacts, and targeted direct inspection.
+- Do not use parallel fan-out for plan creation.
+- Use at most one read-only subagent only when a specific execution-critical gap cannot be resolved efficiently through targeted direct inspection.
+- Keep that task narrow: one code path, interface, validation command, or existing pattern. Forbid further delegation.
+- Prefer `codebase-pattern-finder` for one concrete implementation or test pattern and `codebase-analyzer` for one precise code path or interface.
+- Require concrete file:line references and a concise result. Do not delegate broad discovery, plan synthesis, or duplicate questions.
+- If no subagent is needed, proceed directly to writing the plan.
 
 ### 5. Use patterns correctly
 
@@ -274,3 +273,4 @@ Initialize the companion status ledger with this shape:
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
 - Prefer plans that move in vertical, testable slices with validation between increments
 - Include manual verification checkpoints only where appropriate, and make them precise enough that another operator can execute them without improvising
+- After writing the plan and ledger, provide both paths, summarize important assumptions, and ask for review before handoff to `implement-plan`
