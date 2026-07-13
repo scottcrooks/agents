@@ -24,6 +24,18 @@ Operating contract:
 - When human verification is required, include exact verification instructions, expected outcomes, and the reason automation does not fully cover that slice.
 - Reserve and record a companion status ledger path for resumed execution progress.
 
+## Execution context
+
+The invoking prompt may declare `Automation mode: afk` or `Automation mode: interactive`. Treat the declared mode as authoritative.
+
+In `afk` mode, produce a plan whose implementation and validation can proceed autonomously:
+
+- Replace realistically automatable human checks with tests, scripts, browser automation, screenshots, fixtures, or smoke checks in the relevant slice.
+- Never create a `manual_checkpoint` slice state or blocking operator gate.
+- Never put human verification in the ledger's `Remaining requirements` checklist.
+
+In `interactive` mode, retain the normal manual-checkpoint behavior below when automation is genuinely insufficient. A genuine blocking checkpoint may use `manual_checkpoint` and ledger requirements.
+
 The output of this skill should be execution-sufficient with linked anchors. It must not force the implementer to rediscover the codebase, but it also should not inline the entire design doc or research when a compact digest plus explicit artifact links will do.
 
 ## Boundaries
@@ -131,11 +143,20 @@ When invoked:
 - Make the ledger the mutable execution-state artifact while keeping the plan mostly stable
 - Include per-slice entries in the ledger with:
   - Slice name
-  - Status: `pending | in_progress | complete | blocked`
+  - Status: `pending | in_progress | complete | manual_checkpoint | blocked | cancelled`
   - Started at
   - Completed at
   - Validation result
   - Notes limited to execution facts
+- Initialize the boundary-control metadata required by `implement-plan`:
+  - Execution mode: `boundary-driven`
+  - Boundary state: `active`
+  - Boundary evidence: `none`
+  - Validation: `not run`
+  - Blocker attempts: `none`
+  - Unblock condition: `none`
+- Include a `Remaining requirements` checklist for the first slice, copied or faithfully derived from that slice's planned change, validation, and completion signal
+- Use `active` only while execution is in progress. Before handoff, `implement-plan` must replace it with a checker-accepted boundary: `slice_complete`, `manual_checkpoint`, `hard_blocker`, `plan_complete`, or `cancelled`.
 
 ### Subagent usage
 
@@ -237,25 +258,38 @@ Initialize the companion status ledger with this shape:
 - Plan: [path]
 - Research: [path]
 - Overall status: `not_started`
+- Execution mode: `boundary-driven`
+- Boundary state: `active`
+- Boundary evidence: none
+- Validation: not run
+- Blocker attempts: none
+- Unblock condition: none
 - Current slice: [first slice]
 - Last completed slice: none
 - Next action: [start slice 1]
 - Last updated: [ISO timestamp]
+
+## Remaining Requirements
+- [ ] [First slice implementation requirement]
+- [ ] [First slice validation requirement]
+- [ ] [First slice completion signal]
 
 ## Slice Status
 1. [Slice]
    - Status: `pending`
    - Started at: not started
    - Completed at: not completed
-   - Validation: not run
+   - Validation result: not run
    - Notes: none
 2. [Slice]
    - Status: `pending`
    - Started at: not started
    - Completed at: not completed
-   - Validation: not run
+   - Validation result: not run
    - Notes: none
 ```
+
+The initialized ledger represents active execution setup, not a valid stopping boundary, so `plan_boundary_check.py` is expected to reject it until `implement-plan` records a real handoff boundary. Keep `Next action` concrete and keep the `Plan` filename identical to the implementation plan filename; the checker verifies both. At slice or plan completion, check every `Remaining Requirements` item and record a concrete top-level `Validation` result and `Boundary evidence`. For a manual checkpoint, set the slice status to `manual_checkpoint`. For a hard blocker, set the slice status to `blocked` and record concrete blocker attempts and an unblock condition. For cancellation, set both the slice and overall status to `cancelled`.
 
 ## Quality Bar
 
@@ -270,7 +304,9 @@ Initialize the companion status ledger with this shape:
 - The output should include implementation details, execution order, verification steps, and explicit testing coverage
 - Any code snippets should clarify execution-critical details or referenced pattern application without replacing the plan with a full patch
 - The plan and ledger together should let an implementer resume without broad rediscovery
+- The initialized ledger must include every metadata field and checklist consumed by `implement-plan/scripts/plan_boundary_check.py`
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
 - Prefer plans that move in vertical, testable slices with validation between increments
 - Include manual verification checkpoints only where appropriate, and make them precise enough that another operator can execute them without improvising
+- In AFK mode, contain no manual validation, `manual_checkpoint` boundaries, or human-gated ledger requirements
 - After writing the plan and ledger, provide both paths, summarize important assumptions, and ask for review before handoff to `implement-plan`

@@ -129,4 +129,31 @@ For a hard blocker:
 - Keep implementation ownership in the main agent. Do not use parallel fan-out; use at most one read-only subagent for a narrow question when direct inspection is inefficient.
 - Preserve unrelated user changes.
 
-Final responses must name the boundary state, active/completed slice, ledger update, and validation result or exact unblock condition.
+## Final report protocol
+
+Always end a completed turn with exactly these five tags in this order, with no prose before or after them. This format applies inside Sonata and in standalone skill use; it remains human-readable in both contexts.
+
+```xml
+<turnSummary>...</turnSummary>
+<turnErrors>...</turnErrors>
+<automatedValidation>...</automatedValidation>
+<manualValidation>...</manualValidation>
+<remainingSlices>...</remainingSlices>
+```
+
+Use a self-closing tag whenever a section is empty, and never omit a tag. Put the human-readable work summary in `turnSummary`, errors or blockers in `turnErrors`, and completed automated checks in `automatedValidation`.
+
+`remainingSlices` is a machine continuation signal:
+
+- Populate it only with the next concrete implementation slice that can start autonomously and immediately.
+- `<remainingSlices/>` means Sonata must not issue another implementation continuation.
+- Never put “no slices remain,” plan-completion bookkeeping, PR-review guidance, work requiring external input, or explanatory prose in it.
+
+Boundary mappings are exact:
+
+- A completed slice with another autonomous slice: populate `remainingSlices` with that next slice. `manualValidation` is normally empty; in AFK mode a genuine remaining slice still controls continuation even if contradictory manual validation text is present.
+- An interactive `manual_checkpoint`: populate `manualValidation` with the concrete actions available now and use `<remainingSlices/>`.
+- `plan_complete`: use both `<manualValidation/>` and `<remainingSlices/>`.
+- AFK review-time checks carried by the plan never become a `manual_checkpoint` or final-report `manualValidation`; leave them in the plan for PR generation.
+
+The final report's `turnSummary` must name the boundary state, active/completed slice, ledger update, and validation result or exact unblock condition.
