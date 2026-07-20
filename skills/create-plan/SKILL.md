@@ -112,10 +112,13 @@ When invoked:
 
 - Include explicit validation steps for the intended behavior
 - Tie verification to the execution so the reader knows how to confirm each major part worked
-- Derive automated validation steps from the repository when possible
-- Look for checks that are common for the tech stack in use
+- Treat explicit repository testing and verification instructions as authoritative for command selection
+- If the repository declares an aggregate verification command such as `mono check`, use that command exclusively unless the repository explicitly requires additional commands
+- Do not expand an aggregate verification command into its underlying test, lint, formatting, type-check, build, or diagnostic commands; describe slice-specific behaviors to verify while using the aggregate command as the executable checkpoint
+- Derive automated validation steps from the repository when it does not declare an authoritative verification command
+- Look for checks that are common for the tech stack in use only when repository instructions do not define the validation path
 - Prefer checks defined in repository sources such as `README`, `Makefile`, `package.json`, language-specific project files, or similar project entry points
-- If the repository does not define checks explicitly, infer the most likely automated validation based on the tech stack and existing conventions
+- If the repository does not define testing or verification instructions explicitly, infer the most likely automated validation based on the tech stack and existing conventions
 - Default to automated validation per slice before proposing any manual checkpoint
 - Treat missing automation as a gap to close when it is realistic to add or adapt a test, script, fixture, or command within the slice
 - State specific test activities such as:

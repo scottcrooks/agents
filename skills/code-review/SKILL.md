@@ -23,15 +23,48 @@ Run `scripts/collect_review_set.py` with Python 3 from the target repository. Re
 4. Treat supplied workflow artifacts as intent and acceptance context. They may contain research, design, outline, or plan decisions. Do not report findings against artifact files.
 5. Review the collected worktree state. Sonata revalidates the checksum after the verdict; do not recompute or replace the caller's checksum.
 
+Treat every checksum as a new full-snapshot review. A previous verdict or a familiar
+`stageAttemptId` may provide context, but it must not narrow the review to files changed since the
+last verdict or to the area of the previous finding. Re-account for the complete current manifest.
+
 ## Cover the review set
 
 Use the collector's JSON manifest as the coverage ledger. Exclude every file inside a directory named `thoughts` from findings and the executable review set.
 
 Account for every manifest entry. Inspect every changed hunk, loading unchanged context only when needed. Do not mistake an inability to inspect a binary file for evidence of a defect.
 
+Keep an internal ledger of the files and changed hunks inspected. Tool-output truncation is
+incomplete coverage, not a reason to infer that the omitted patch is safe. If any diff or file read
+is truncated, split it into smaller semantic or per-file reads and inspect the omitted content
+before returning.
+
 For a large set, group files into semantic slices such as domain behavior, persistence, API and callers, UI, tests, and deployment. Finish with an integration pass across slices.
 
 Prioritize authorization, validation, persistence, migrations, concurrency, error paths, public interfaces, state transitions, compatibility, and destructive operations. Run focused checks only when they materially improve confidence.
+
+## Complete defect discovery
+
+A confirmed blocker is not a stopping condition. Continue through the complete manifest and return
+all independent, high-confidence P0 and P1 findings in the current snapshot. The three-finding
+limit applies only to P2 findings.
+
+Use this discovery loop before producing the verdict:
+
+1. Review every semantic slice and collect candidate defects without finalizing after the first
+   confirmed finding.
+2. Make an integration pass through changed entry points, callers, state transitions, and visible
+   user flows. Trace each expected path past its first failure point so one early break does not
+   hide a second defect in the same flow.
+3. For every confirmed finding, mentally apply the smallest suggested correction and trace the
+   affected flow again. If that correction exposes another defect already present in the reviewed
+   snapshot, report the additional defect or broaden the finding to the complete root cause. Do
+   not report a problem that would be introduced only by a hypothetical future implementation.
+4. After the latest new candidate, perform one final independent search for additional defects
+   across the coverage ledger. Return only when that pass produces no new qualifying finding and
+   every manifest entry is accounted for.
+
+On a re-review, evaluate the whole refreshed snapshot using the same loop. Verify prior fixes, but
+do not assume the previous review exhausted unchanged files or adjacent behavior.
 
 ## Apply the finding standard
 

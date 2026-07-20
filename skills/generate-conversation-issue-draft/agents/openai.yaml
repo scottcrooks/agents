@@ -1,0 +1,7 @@
+interface:
+  display_name: "Generate Conversation Issue Draft"
+  short_description: "Generate Sonata conversation issue drafts"
+  default_prompt: "Use $generate-conversation-issue-draft with the Sonata-provided export identity and output contract."
+
+policy:
+  allow_implicit_invocation: false

@@ -15,6 +15,8 @@ Operating contract:
 - The resulting design doc must preserve an explicit link to the research artifact so later phases can follow the same grounding chain.
 - Do not expand scope beyond research unless the user explicitly asks for more research.
 - This skill produces design decisions, not execution instructions.
+- Treat backward compatibility as opt-in. Unless the user, research, or an accepted external constraint explicitly requires it, prefer a clean breaking change that replaces old interfaces, schemas, behaviors, and mechanisms instead of preserving parallel paths.
+- Do not confuse breaking compatibility with ignoring correctness or required data safety. Preserve or convert existing data only when the accepted scope says it must survive the change.
 - This skill is artifact-first: when research and an actionable design prompt exist, write the best supported design doc, then ask for review.
 - The actionable design prompt may come from either:
   - the user's stated outcome in chat
@@ -95,6 +97,8 @@ Required gating before drafting:
 - Identify the realistic solution options
 - Compare them against the constraints from the research
 - Call out where an option introduces complexity, risk, or future maintenance cost
+- Penalize compatibility layers, adapters, versioned paths, dual writes, and staged migrations unless compatibility is an explicit requirement
+- Prefer direct replacement and deletion of superseded mechanisms when breaking changes are allowed
 - Explicitly state the tradeoffs between options, not just their standalone pros or cons
 - If one option is preferred only under certain priorities, state the assumed priority, explain its effect, and flag it for review
 - Do not collapse multiple plausible approaches into a single recommendation without first comparing them in plain language
@@ -203,5 +207,6 @@ Produce the design document with this shape:
 - Cover tradeoffs explicitly in the artifact
 - Present multiple viable options in the artifact before recommending one
 - Recommendations must include at least one rejected alternative and the reason it was not chosen
+- Do not preserve legacy interfaces, behavior, or implementation paths by default; require an explicit compatibility constraint to justify them
 - Treat this document as compressed context for later phases rather than as an executable plan
 - If the user wants execution shape next, hand off naturally to `structured-outline`

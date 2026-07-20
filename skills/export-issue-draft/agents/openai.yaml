@@ -1,0 +1,7 @@
+interface:
+  display_name: "Export Issue Draft"
+  short_description: "Export a Sonata issue draft artifact"
+  default_prompt: "Use $export-issue-draft with the Sonata-provided conversation source and outbox."
+
+policy:
+  allow_implicit_invocation: false
