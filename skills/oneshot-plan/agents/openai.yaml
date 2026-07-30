@@ -1,0 +1,4 @@
+interface:
+  display_name: "Oneshot Plan"
+  short_description: "Create a minimal executable plan in one pass"
+  default_prompt: "Use $oneshot-plan to turn this ticket into a minimal executable implementation plan."
