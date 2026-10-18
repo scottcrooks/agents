@@ -11,6 +11,15 @@ from pathlib import Path
 
 FIELD_PATTERN = re.compile(r"^- (?P<name>[^:]+):\s*(?P<value>.*)\s*$", re.MULTILINE)
 SLICE_STATUS_PATTERN = re.compile(r"^\s+- Status:\s*`(?P<status>[^`]+)`\s*$", re.MULTILINE)
+SLICE_PATTERN = re.compile(r"^(?P<number>[1-9]\d*)\. (?P<name>\S[^\n]*)$", re.MULTILINE)
+ALLOWED_STATUSES = {
+    "pending",
+    "in_progress",
+    "complete",
+    "manual_checkpoint",
+    "blocked",
+    "cancelled",
+}
 ALLOWED_BOUNDARIES = {
     "slice_complete",
     "manual_checkpoint",
@@ -29,6 +38,58 @@ def fields(text: str) -> dict[str, str]:
         match.group("name").strip().lower(): normalize(match.group("value"))
         for match in FIELD_PATTERN.finditer(text)
     }
+
+
+def without_code_blocks(text: str) -> str:
+    """Exclude examples and code from the Markdown control fields."""
+    lines: list[str] = []
+    fence_marker = ""
+    fence_length = 0
+    for line in text.splitlines():
+        fence = re.match(r"^[ \t]*(`{3,}|~{3,})(.*)$", line)
+        if fence:
+            marker, suffix = fence.groups()
+            if not fence_marker:
+                fence_marker, fence_length = marker[0], len(marker)
+            elif (
+                marker[0] == fence_marker
+                and len(marker) >= fence_length
+                and not suffix.strip()
+            ):
+                fence_marker = ""
+            lines.append("")
+        else:
+            lines.append("" if fence_marker else line)
+    return "\n".join(lines)
+
+
+def section(text: str, heading: str) -> str:
+    match = re.search(
+        rf"^##[ \t]+{re.escape(heading)}[ \t]*\n(?P<body>.*?)(?=^##[ \t]+|\Z)",
+        text,
+        re.MULTILINE | re.DOTALL | re.IGNORECASE,
+    )
+    return match.group("body") if match else ""
+
+
+def slices(text: str, heading: str) -> list[tuple[int, str, str]]:
+    body = section(text, heading)
+    matches = list(SLICE_PATTERN.finditer(body))
+    entries: list[tuple[int, str, str]] = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(body)
+        entries.append((int(match.group("number")), match.group("name").strip(),
+                        body[match.end():end]))
+    return entries
+
+
+def has_checkpoint(body: str) -> bool:
+    matches = re.findall(
+        r"^[ \t]*-[ \t]+Manual verification checkpoint:[ \t]*(.*)$",
+        body,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    return any(normalize(value).lower().rstrip(".") not in {"", "none"} for value in matches)
 
 
 def fail(errors: list[str]) -> int:
@@ -51,9 +112,37 @@ def main() -> int:
     if errors:
         return fail(errors)
 
-    plan_text = args.plan.read_text(encoding="utf-8")
-    ledger_text = args.ledger.read_text(encoding="utf-8")
-    metadata = fields(ledger_text)
+    plan_text = without_code_blocks(args.plan.read_text(encoding="utf-8"))
+    ledger_text = without_code_blocks(args.ledger.read_text(encoding="utf-8"))
+    metadata = fields(section(ledger_text, "Metadata"))
+    plan_slices = slices(plan_text, "Execution Slices")
+    ledger_slices = slices(ledger_text, "Slice Status")
+    plan_identity = [(number, name) for number, name, _ in plan_slices]
+    ledger_identity = [(number, name) for number, name, _ in ledger_slices]
+    if not plan_slices:
+        errors.append("plan must define numbered entries under Execution Slices")
+    elif [number for number, _, _ in plan_slices] != list(range(1, len(plan_slices) + 1)):
+        errors.append("Execution Slices must use consecutive numbers starting at 1")
+    if not ledger_slices or ledger_identity != plan_identity:
+        errors.append("ledger slices must match plan Execution Slices in number, name, and order")
+
+    statuses: list[str] = []
+    checkpoint_slices: list[int] = []
+    for number, name, body in ledger_slices:
+        entry_statuses = SLICE_STATUS_PATTERN.findall(body)
+        if len(entry_statuses) != 1 or entry_statuses[0] not in ALLOWED_STATUSES:
+            errors.append(f"ledger slice {number}. {name} requires one valid Status")
+        statuses.extend(entry_statuses)
+        if "manual_checkpoint" in entry_statuses:
+            checkpoint_slices.append(number)
+
+    automation = metadata.get("automation mode", "")
+    plan_automation = fields(section(plan_text, "Execution Context")).get("automation mode", "")
+    if automation not in {"afk", "interactive"} or plan_automation != automation:
+        errors.append("plan and ledger must record the same Automation mode: afk or interactive")
+    planned_checkpoints = {number for number, _, body in plan_slices if has_checkpoint(body)}
+    if automation == "afk" and (planned_checkpoints or checkpoint_slices):
+        errors.append("AFK mode forbids blocking manual checkpoints")
     mode = metadata.get("execution mode", "")
     boundary = metadata.get("boundary state", "")
     evidence = metadata.get("boundary evidence", "")
@@ -61,7 +150,6 @@ def main() -> int:
     unblock = metadata.get("unblock condition", "")
     next_action = metadata.get("next action", "")
     ledger_plan = metadata.get("plan", "")
-    statuses = SLICE_STATUS_PATTERN.findall(ledger_text)
     unchecked_requirements = re.findall(r"^\s*- \[ \] ", ledger_text, re.MULTILINE)
 
     if mode not in {"boundary-driven", "single-slice", "continuous"}:
@@ -98,15 +186,12 @@ def main() -> int:
             errors.append("slice_complete requires recorded validation results")
 
     if boundary == "manual_checkpoint":
-        if "manual_checkpoint" not in statuses:
-            errors.append("manual_checkpoint requires a slice with that status")
-        checkpoints = [
-            line for line in plan_text.splitlines()
-            if "manual verification checkpoint:" in line.lower()
-            and not re.search(r"checkpoint:\s*none\b", line, re.IGNORECASE)
-        ]
-        if not checkpoints:
-            errors.append("the plan does not define a manual verification checkpoint")
+        if automation != "interactive":
+            errors.append("manual_checkpoint requires interactive Automation mode")
+        if len(checkpoint_slices) != 1:
+            errors.append("manual_checkpoint requires exactly one slice with that status")
+        elif checkpoint_slices[0] not in planned_checkpoints:
+            errors.append("the checkpoint slice must define Manual verification checkpoint instructions")
         if not evidence or evidence.lower() == "none":
             errors.append("manual_checkpoint requires Boundary evidence/instructions")
 

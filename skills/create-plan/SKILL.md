@@ -28,6 +28,8 @@ Operating contract:
 
 The invoking prompt may declare `Automation mode: afk` or `Automation mode: interactive`. Treat the declared mode as authoritative.
 
+Default to `interactive` when no mode is declared, and record the selected automation mode in both the plan and ledger. It is separate from implementation's execution mode.
+
 In `afk` mode, produce a plan whose implementation and validation can proceed autonomously:
 
 - Replace realistically automatable human checks with tests, scripts, browser automation, screenshots, fixtures, or smoke checks in the relevant slice.
@@ -35,6 +37,10 @@ In `afk` mode, produce a plan whose implementation and validation can proceed au
 - Never put human verification in the ledger's `Remaining requirements` checklist.
 
 In `interactive` mode, retain the normal manual-checkpoint behavior below when automation is genuinely insufficient. A genuine blocking checkpoint may use `manual_checkpoint` and ledger requirements.
+
+### Review-time manual validation
+
+If non-blocking human review remains useful in AFK mode, list it in the plan under `## Review-time manual validation` with concrete operator instructions. Keep it out of the ledger's remaining requirements and implementation's manual checkpoint/report fields. These review checks are compatible with `plan_complete`; only implementation and automated validation gate completion.
 
 The output of this skill should be execution-sufficient with linked anchors. It must not force the implementer to rediscover the codebase, but it also should not inline the entire design doc or research when a compact digest plus explicit artifact links will do.
 
@@ -105,7 +111,8 @@ When invoked:
 - Prefer more small slices over fewer large slices when scope can be split cleanly
 - Avoid defaulting to horizontal sequencing like database first, then services, then frontend, unless the upstream artifacts explicitly require that shape
 - Make each slice small enough that verification can happen before the next slice begins
-- Each slice should include only the objective, key touchpoints, planned change, validation, completion signal, and any required manual checkpoint
+- Keep slice details limited to what execution needs: objective, key touchpoints, planned change, validation, completion signal, and any required manual checkpoint
+- Preserve acceptance-criteria labels, dependencies, relevant behavior/contracts, concrete file/symbol and pattern references, and validation commands with working directory, setup, and expected evidence. Map every acceptance criterion to its owning slices and validation.
 - Prefer grouping consecutive slices under agent execution when their checkpoints can be satisfied automatically without operator intervention
 
 ### 3. Define verification
@@ -136,6 +143,7 @@ When invoked:
   - Exact operator actions in order
   - Expected results and failure signals
   - Whether the checkpoint is blocking for the next slice
+- Put a nonempty reason on the `Manual verification checkpoint:` field's first line, with the detailed instructions in its continuation. Use `none` when no blocking checkpoint is required.
 - Make it clear which validation happens before proceeding to the next slice
 - Make it clear whether the agent should continue automatically after a checkpoint or pause for operator confirmation
 
@@ -196,9 +204,17 @@ Produce the implementation plan with this shape:
 ```markdown
 # Implementation Plan: [Topic]
 
+## Execution Context
+- Automation mode: [afk | interactive]
+
 ## Scope
 - [What is being implemented]
 - [Non-goals or exclusions]
+
+## Acceptance Criteria
+| Criterion | Required observable behavior | Owning slices | Validation evidence |
+| --- | --- | --- | --- |
+| AC1 | [Behavior] | 1 | [Check and expected result] |
 
 ## Input Artifacts
 - Research: [path]
@@ -220,19 +236,21 @@ Produce the implementation plan with this shape:
 
 ## Execution Slices
 1. [Slice]
-   - Objective
-   - Key touchpoints
-   - Planned change
-   - Automated validation
-   - Completion signal
-   - Manual verification checkpoint if needed, with exact operator instructions
+   - Objective: [Observable outcome and acceptance criteria]
+   - Dependencies: [Earlier slices or none]
+   - Key touchpoints: [Files/symbols and implementation/test patterns]
+   - Planned change: [Relevant behavior and contracts]
+   - Automated validation: [Command, working directory, setup, expected behavioral evidence]
+   - Completion signal: [Acceptance evidence]
+   - Manual verification checkpoint: [none, or reason/setup/operator actions/expected results/resume condition]
 2. [Slice]
-   - Objective
-   - Key touchpoints
-   - Planned change
-   - Automated validation
-   - Completion signal
-   - Manual verification checkpoint if needed, with exact operator instructions
+   - Objective: [Observable outcome and acceptance criteria]
+   - Dependencies: [Earlier slices or none]
+   - Key touchpoints: [Files/symbols and implementation/test patterns]
+   - Planned change: [Relevant behavior and contracts]
+   - Automated validation: [Command, working directory, setup, expected behavioral evidence]
+   - Completion signal: [Acceptance evidence]
+   - Manual verification checkpoint: [none, or reason/setup/operator actions/expected results/resume condition]
 
 ## Cross-Slice Validation
 - Verify [X behavior]
@@ -261,6 +279,7 @@ Initialize the companion status ledger with this shape:
 - Plan: [path]
 - Research: [path]
 - Overall status: `not_started`
+- Automation mode: [same as plan]
 - Execution mode: `boundary-driven`
 - Boundary state: `active`
 - Boundary evidence: none
@@ -292,7 +311,7 @@ Initialize the companion status ledger with this shape:
    - Notes: none
 ```
 
-The initialized ledger represents active execution setup, not a valid stopping boundary, so `plan_boundary_check.py` is expected to reject it until `implement-plan` records a real handoff boundary. Keep `Next action` concrete and keep the `Plan` filename identical to the implementation plan filename; the checker verifies both. At slice or plan completion, check every `Remaining Requirements` item and record a concrete top-level `Validation` result and `Boundary evidence`. For a manual checkpoint, set the slice status to `manual_checkpoint`. For a hard blocker, set the slice status to `blocked` and record concrete blocker attempts and an unblock condition. For cancellation, set both the slice and overall status to `cancelled`.
+The initialized ledger represents active execution setup, not a valid stopping boundary, so `plan_boundary_check.py` is expected to reject it until `implement-plan` records a real handoff boundary. Keep `Next action` concrete and keep the `Plan` filename identical to the implementation plan filename; the checker verifies both. Copy every slice number and name from `Execution Slices` to `Slice Status` in the same order, using consecutive top-level numbered entries starting at 1. Record the same automation mode in both artifacts. Use the exact field `Manual verification checkpoint: none` for slices without a blocking checkpoint; AFK plans always use `none`. At slice or plan completion, check every `Remaining Requirements` item and record a concrete top-level `Validation` result and `Boundary evidence`. At plan completion, also set `Overall status: complete`. For a manual checkpoint, set the slice status to `manual_checkpoint`. For a hard blocker, set the slice status to `blocked` and record concrete blocker attempts and an unblock condition. For cancellation, set both the slice and overall status to `cancelled`.
 
 ## Quality Bar
 
@@ -311,5 +330,5 @@ The initialized ledger represents active execution setup, not a valid stopping b
 - If unresolved design questions remain, stop and resolve them before finalizing the plan
 - Prefer plans that move in vertical, testable slices with validation between increments
 - Include manual verification checkpoints only where appropriate, and make them precise enough that another operator can execute them without improvising
-- In AFK mode, contain no manual validation, `manual_checkpoint` boundaries, or human-gated ledger requirements
+- In AFK mode, contain no blocking manual validation, `manual_checkpoint` boundaries, or human-gated ledger requirements
 - After writing the plan and ledger, provide both paths, summarize important assumptions, and ask for review before handoff to `implement-plan`

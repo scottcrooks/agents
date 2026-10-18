@@ -1,45 +1,60 @@
 ---
 name: implement-plan
-description: Execute or resume an approved implementation plan across one or more validated slices, persisting through recoverable work and ending only at explicit ledger-backed slice boundaries, manual checkpoints, blockers, or plan completion.
+description: Execute or resume an approved plan in validated slices, maintaining its status ledger and checking each handoff boundary.
 ---
 
 # Implement Plan
 
 Execute the approved plan in order. Treat the plan as the execution contract and its companion status ledger as the resume and boundary authority.
 
-## Execution mode
+Implementation runs on Luna; the caller configures the model and reasoning effort. Choose effort according to the work; stopping rules do not establish reasoning sufficiency. Resolve implementation details within the approved design; surface material missing decisions instead of inventing them.
 
-Choose and record one mode in the ledger before mutating code:
+## Execution context
 
-- `boundary-driven` (default): execute one or more slices. A completed slice permits a handoff but does not require one; either hand back at that boundary or activate the next slice and continue.
-- `single-slice`: complete exactly one slice and hand back. Use only when the user explicitly limits the run to one slice.
-- `continuous`: continue across completed slices until the whole plan completes, a plan-defined manual checkpoint is reached, or a hard blocker is established.
+Preserve `Automation mode: afk` or `Automation mode: interactive` under the plan's `## Execution Context` and ledger's `## Metadata`. An explicit caller instruction is authoritative; otherwise use the plan's mode, defaulting to `interactive` if absent. Fill missing mode fields and reconcile any mismatch before execution. AFK mode permits no blocking manual checkpoint or human-gated remaining requirement. Keep optional review-time checks in the plan for PR review.
 
-Use `continuous` or `single-slice` only when the user explicitly requests that scope. Otherwise use `boundary-driven`. All modes are suitable for low-reasoning execution because no mode permits a mid-slice handoff.
+Choose and record implementation's separate execution mode in the ledger:
 
-## Boundary state machine
+| Execution mode | Continuation rule |
+| --- | --- |
+| `boundary-driven` (default) | At a completed slice, either hand back or activate the next slice and continue. |
+| `single-slice` (only on explicit request) | Complete exactly one slice and hand back. |
+| `continuous` (only on explicit request) | Continue until plan completion, a plan-defined manual checkpoint, or a hard blocker. |
 
-The ledger must contain these metadata fields:
+## Start or resume
 
-```markdown
-- Execution mode: `boundary-driven`
-- Boundary state: `active`
-- Boundary evidence: none
-- Validation: not run
-- Blocker attempts: none
-- Unblock condition: none
-```
+1. Read the plan fully and its named ledger before broad repository exploration. If no ledger path exists, derive `thoughts/plan-status/<plan-name>.status.md` and initialize it before code mutation.
+2. Confirm the plan covers its acceptance criteria, relevant behavior/contracts, files/symbols, patterns, dependencies, validation command/working directory/setup, completion signals, and any manual checkpoints. Resolve a material gap through targeted evidence or the hard-blocker test below; do not broadly re-plan.
+3. Reconcile plan and ledger slice numbers, names, and order without discarding execution history. Both must use consecutive top-level numbered entries starting at 1 under `Execution Slices` and `Slice Status`. Fill missing metadata, including automation mode, current/last completed slice, validation, boundary evidence, blocker attempts, unblock condition, next action, and timestamp.
+4. Resume the `in_progress` slice, or the recorded `manual_checkpoint`/`blocked` slice once its resume/unblock condition is satisfied. Otherwise select the next `pending` slice and confirm its dependencies are complete. Do not bypass a waiting slice to start later work; a completed/cancelled plan has no active slice.
+5. Set the slice and overall status to `in_progress`, boundary state to `active`, and boundary evidence/blocker attempts/unblock condition to `none`. Populate `Remaining requirements` from the active slice's implementation, validation, and completion requirements; keep it scoped to that slice.
 
-Allowed boundary states are:
+## Active slice loop
 
-- `active`: work is still in progress. A final response is forbidden.
-- `slice_complete`: the active slice is fully implemented and validated. Final response is allowed in `boundary-driven` or `single-slice` mode.
-- `manual_checkpoint`: the plan explicitly requires user verification before further work.
-- `hard_blocker`: the next concrete plan action cannot proceed without unavailable authority, external state, a user-only decision, or a material scope/design change.
-- `plan_complete`: every slice and final validation requirement is complete.
-- `cancelled`: the user explicitly cancelled or replaced this plan, and the ledger records that instruction.
+While the boundary state is `active`, a final response is forbidden:
 
-Before any final response, update the ledger to a permitted boundary state and run:
+1. Read the next unmet requirement and perform the next concrete action.
+2. Inspect the result, update the checklist and execution notes, and continue through recoverable errors and related prerequisites.
+3. Run the planned behavioral checks and repository-standard validation in the specified order, using the authoritative aggregate command exclusively where required. Record commands, working directories, and outcomes. Fix failures caused by the requested change and rerun affected checks; do not broaden work to unrelated failures.
+4. Verify acceptance behavior and relevant negative paths, including newly required coverage. A passing boundary check or unrelated existing test suite is not proof of functional correctness.
+5. Once every slice requirement is satisfied, update the ledger using the transition contract below.
+
+Every non-terminal commentary update must be followed by a concrete tool call in the same turn.
+
+## Boundary transition contract
+
+At every transition, update `Current slice`, `Last completed slice`, `Next action`, `Last updated`, per-slice timestamps, and validation results. `Next action` must describe the actual resume, unblock, review, or completion action; do not leave it as `none`.
+
+| Boundary state | Slice and overall status | Required evidence and continuation |
+| --- | --- | --- |
+| `active` | Active slice and overall `in_progress` | To continue after a completed slice, activate the next slice, replace its checklist, and reset boundary evidence/blocker fields. |
+| `slice_complete` | Completed slice `complete`; overall `in_progress` when work remains | Check all active requirements; set concrete `Boundary evidence` naming the completed slice and acceptance evidence; record top-level `Validation`. Only `boundary-driven` and `single-slice` may hand back here. |
+| `plan_complete` | Every slice and overall `complete` | Complete final/cross-slice validation and acceptance-criteria coverage; check all remaining requirements; set concrete `Boundary evidence` and top-level `Validation`. Use this state when no slices remain, including in `single-slice` mode. |
+| `manual_checkpoint` | Checkpoint slice and overall `manual_checkpoint` | Interactive mode only. The active slice must define `Manual verification checkpoint: [instructions]`. Record automated results and exact operator actions/expected results as `Boundary evidence`. Resume only on explicit confirmation. |
+| `hard_blocker` | Active slice and overall `blocked` | Pass the hard-blocker test; record concrete `Boundary evidence`, `Blocker attempts`, and `Unblock condition`. |
+| `cancelled` | Active slice and overall `cancelled` | Record explicit user cancellation/replacement in `Boundary evidence` and the concrete next action. |
+
+After a slice completes, apply the execution mode's continuation rule. Before any final response, reach a permitted boundary and run:
 
 ```bash
 python3 <implement-plan-skill-directory>/scripts/plan_boundary_check.py \
@@ -47,9 +62,38 @@ python3 <implement-plan-skill-directory>/scripts/plan_boundary_check.py \
   --ledger <ledger-path>
 ```
 
-The successful boundary check must be the final tool action before the final response. If it fails, continue the active tool-use loop. Never describe a failed boundary check as a blocker.
+The successful check must be the final tool action before the final response. If it fails, repair the artifact inconsistency and rerun it; checker rejection itself is not a hard blocker. The check establishes structural agreement and recorded boundary evidence, not whether code works. When installed, the `Stop` hook applies the same check and automatically continues a rejected stop.
 
-When the implement-plan `Stop` hook is installed, it mechanically applies the same check whenever Codex attempts to end a turn. A rejected stop automatically continues the turn with the guard failure as the next prompt. Keep the ledger accurate because the hook, not a status-only final response, decides whether the turn may end.
+### Completed-ledger example
+
+For a plan with one slice named `Reject updates by non-owners`, these are the completion fields. Preserve the ledger's other metadata and history:
+
+```markdown
+## Metadata
+- Plan: thoughts/plans/YYYY-MM-DD-owner-check.md
+- Automation mode: afk
+- Overall status: complete
+- Execution mode: boundary-driven
+- Boundary state: plan_complete
+- Boundary evidence: Slice 1 satisfies AC1 owner success and AC2 non-owner rejection with unchanged data.
+- Validation: Repository-root `make check` passed, including the new ownership cases and final regression checks.
+- Blocker attempts: none
+- Unblock condition: none
+- Current slice: none
+- Last completed slice: 1. Reject updates by non-owners
+- Next action: Review the completed change.
+- Last updated: [actual ISO timestamp]
+
+## Remaining Requirements
+- [x] Implement AC1 and AC2 using the existing ownership pattern.
+- [x] Add acceptance and negative-path coverage; run slice and final validation.
+- [x] Confirm all acceptance criteria have passing evidence.
+
+## Slice Status
+1. Reject updates by non-owners
+   - Status: `complete`
+   - Validation result: `make check` passed; AC1 and AC2 assertions passed.
+```
 
 ## Hard-blocker test
 
@@ -63,63 +107,7 @@ Unrelated dirty or committed changes are not blockers unless they overlap requir
 
 ## User steering during a slice
 
-A correction, question, or added instruction during an active slice does not cancel the plan. Address it, reread the ledger, set `Boundary state` back to `active` if necessary, and resume the slice in the same turn. Stop only if the user explicitly cancels, replaces, or materially changes the plan.
-
-If the user explicitly cancels or replaces the plan, mark the active slice and overall status `cancelled`, record the user instruction as `Boundary evidence`, set a concrete `Next action`, set `Boundary state` to `cancelled`, and run the boundary check.
-
-## Start or resume
-
-1. Read the implementation plan fully.
-2. Read the ledger path named by the plan before broad repository exploration.
-3. If no ledger path exists, derive `thoughts/plan-status/<plan-name>.status.md` and initialize it before the first code mutation.
-4. Add or normalize the boundary metadata fields without discarding existing history.
-5. Select the ledger's `in_progress` slice, otherwise the next `pending` slice.
-6. Confirm the slice objective, required changes, validation, completion signal, and any manual checkpoint.
-7. Set the slice to `in_progress`, set `Boundary state` to `active`, and maintain a `Remaining requirements` checklist copied or faithfully derived from the slice.
-
-Stop before coding only when ambiguity or a repository contradiction materially changes scope, sequencing, or validation. Record it as a hard blocker only when it passes the hard-blocker test.
-
-## Active slice loop
-
-While `Boundary state` is `active`:
-
-1. Read the next unmet item from `Remaining requirements`.
-2. Perform the next concrete tool action.
-3. Inspect the result and update the checklist and ledger notes.
-4. Continue through recoverable errors and tightly related prerequisites.
-5. Run plan-required and repository-standard validation.
-6. Fix and rerun failed validation until it passes or a hard blocker is established.
-
-Every non-terminal commentary update must be followed by a concrete tool call in the same turn. A passing intermediate check is progress, not completion. Do not end with a status summary, check result, partial edit summary, or an offer to continue.
-
-## Reaching a boundary
-
-For slice completion:
-
-1. Verify every planned edit, cleanup item, validation requirement, and completion signal against the repository.
-2. Run the required boundary validation in the plan's specified order.
-3. Mark every `Remaining requirements` item complete.
-4. Record validation commands and outcomes in the slice and top-level `Validation` field.
-5. Mark the slice `complete` and record the next pending slice or plan completion.
-6. In `single-slice` mode, set `Boundary state` to `slice_complete` and run the boundary check.
-7. In `continuous` mode, mark the next slice `in_progress`, reset the boundary fields to `active`/`none`, create its checklist, and continue. If no slice remains, set `plan_complete` and run the boundary check.
-8. In `boundary-driven` mode, make the continuation decision only after the slice is complete. A boundary permits a handoff; it does not require one. To hand back, set `slice_complete` and run the boundary check. To continue, activate the next slice, reset boundary fields to `active`/`none`, create its checklist, and make the next tool call.
-
-Do not stop merely because validation passed, the slice was lengthy, or a progress summary is available. If ending the turn, end because the ledger proves the slice boundary is complete.
-
-For a manual checkpoint:
-
-1. Confirm the active slice explicitly defines the checkpoint.
-2. Record completed automated validation and exact user verification instructions.
-3. Mark the slice `manual_checkpoint`, set the ledger boundary state accordingly, and run the boundary check.
-4. Wait for explicit user confirmation. On confirmation, restore the slice and boundary to `in_progress`/`active` and continue.
-
-For a hard blocker:
-
-1. Apply the hard-blocker test.
-2. Mark the slice `blocked`.
-3. Fill `Boundary evidence`, `Blocker attempts`, and `Unblock condition` with concrete values.
-4. Set `Boundary state` to `hard_blocker` and run the boundary check.
+A correction, question, or added instruction does not cancel the plan. Address it, reread the ledger, restore `active` if necessary, and resume the slice in the same turn. If the user explicitly cancels/replaces the plan or materially changes its scope, follow the transition contract or surface the decision required; preserve completed work and the recorded instruction.
 
 ## Scope and communication
 

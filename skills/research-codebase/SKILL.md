@@ -7,9 +7,7 @@ description: Document codebase as-is and save point-in-time research in thoughts
 
 Produce a point-in-time research document that explains how the codebase works today.
 
-Favor deterministic execution over cleverness.
-
-Keep saved research documents concise, but not fragmentary. The document must remain readable to another engineer.
+Research runs on Luna; the caller configures the model and reasoning effort. Produce concise evidence another engineer or planner can use without the conversation.
 
 ## Core Contract
 
@@ -18,10 +16,8 @@ Keep saved research documents concise, but not fragmentary. The document must re
 - Do not recommend changes unless the user explicitly asks for recommendations.
 - Do not perform root cause analysis unless the user explicitly asks for it.
 - Do not critique the implementation.
-- The only permitted repository write is the research document under `thoughts/research/`.
-- Never modify source code, tests, configuration, dependencies, generated files, or git state.
-- Never implement a fix or transition into implementation, even when the required change appears obvious.
-- If the user asks for implementation during research, record it as requested future work and finish the research artifact only.
+- The only permitted repository write is the research document under `thoughts/research/`. Do not change source, tests, configuration, dependencies, generated files, or git state.
+- Implementation belongs to a subsequent phase. Record requested future implementation in the research anchor and finish the research artifact.
 - Distinguish clearly between:
   - what the user, ticket, or issue claims
   - what you verified from repository evidence
@@ -29,18 +25,16 @@ Keep saved research documents concise, but not fragmentary. The document must re
 
 ## Deterministic Guard Rails
 
-These rules are mandatory. They keep output consistent across research-capable models.
-
-1. Read directly mentioned files before doing anything else.
+1. Read directly mentioned files before discovery or delegation.
 2. Do lightweight local discovery yourself before spawning subagents.
-3. Use a checklist and complete steps in order.
+3. Track inputs, flow coverage, supporting tests, unknowns, metadata, and document writing in a short checklist.
 4. Never write the final document from memory alone. Base every section on collected evidence.
 5. Every factual claim in `Summary`, `Detailed Findings`, and `Code References` must cite at least one file path, and line numbers when practical.
 6. If evidence is missing, say `Could not confirm from available evidence.` Do not guess.
 7. Keep the document schema fixed. Do not add or remove top-level sections except where explicitly allowed below.
 8. Use focused subagents only when bounded parallel research materially improves coverage or context use.
 9. When subagents are used, wait for all of them before synthesizing.
-10. Keep synthesis concrete. Avoid generic architecture prose that is not grounded in files.
+10. Distinguish code inspection, existing test assertions, and behavior actually observed at runtime. A test's existence does not establish that it passed.
 
 ## Default User-Facing Behavior
 
@@ -56,7 +50,7 @@ If the user already provided a question, start immediately.
 
 ## Required Workflow
 
-Follow these steps in order.
+Read anchor inputs first, then gather the evidence needed for the document.
 
 ### 1. Read Anchor Inputs First
 
@@ -78,21 +72,16 @@ Before using subagents:
 - Find the relevant files, directories, symbols, and tests yourself.
 - Build a short working map of likely evidence sources.
 - Prefer current code and directly referenced docs over old research notes.
+- Trace the relevant behavior from its entry point to its observable result. Inspect authorization, interfaces, state changes, persistence, and external effects only where the flow touches them.
+- Inspect callers and consumers at each relevant boundary, plus the existing tests and material failure paths. Do not infer a whole flow from one implementation or test file.
 
 Do not search prior research unless the user explicitly asked you to use it.
 
-### 3. Make a Small Research Checklist
+### 3. Check Coverage and Unknowns
 
-Create a checklist for yourself covering:
-
-- anchor inputs read
-- primary code paths to inspect
-- supporting docs/config to inspect
-- subagent tasks to delegate
-- metadata gathering
-- document writing
-
-Keep the checklist short and execution-oriented.
+- For each relevant boundary, record the files inspected, verified behavior, supporting test assertions, and any gap.
+- Label evidence as code inspection, test assertion, or observed runtime result where the distinction affects the claim. Run a check only when authorized and compatible with the research write boundary; otherwise describe its assertions without claiming runtime confirmation.
+- Put unresolved behavior and missing coverage in `Open Questions`, with the affected flow or requirement and why it may matter to planning. Do not choose a design to fill an evidence gap.
 
 ### 4. Delegate Focused Read-Only Research When Useful
 
@@ -118,7 +107,7 @@ Rules for delegation:
 - Keep tasks narrow. Example: one subsystem, one flow, one pattern family.
 - Do not delegate the same question twice.
 
-Use this prompt shape:
+Use this prompt shape, including the write and scope restrictions above:
 
 ```text
 Document current implementation only. No recommendations, no critique.
@@ -160,6 +149,10 @@ From the repository root:
 - collect branch name
 - collect repository name
 - collect researcher name from metadata output if available
+
+If `mono metadata` is unavailable or fails, gather the commit and branch with `git rev-parse HEAD` and `git branch --show-current`, the repository name from the root directory, and the timestamp with timezone from the system clock. Use the caller identity if available; otherwise record `researcher: unknown` and explain the missing metadata. For detached HEAD or unavailable git metadata, record the actual condition instead of inventing values. Metadata-tool failure alone does not prevent saving the research.
+
+Record relevant uncommitted changes as part of the evidence context; a commit hash alone does not identify a dirty working tree. `status: complete` means the investigation is finished, not that all questions are resolved or implementation is ready.
 
 Filename rules:
 
@@ -211,6 +204,11 @@ last_updated_by: [name]
 
 ## Detailed Findings
 
+### Flow and Coverage
+- [Relevant entry point, boundary sequence, and observable result, with citations]
+- [Existing test assertions and material failure paths, with citations]
+- [Evidence context: relevant uncommitted changes and limits of static/runtime evidence]
+
 ### [Area 1]
 - what exists
 - how it behaves
@@ -236,7 +234,7 @@ last_updated_by: [name]
 - `thoughts/research/example.md` - why it was relevant
 
 ## Open Questions
-- unresolved item
+- [Unresolved item, affected flow or requirement, and potential consequence for planning]
 - `Could not confirm from available evidence.` when applicable
 ```
 
@@ -244,7 +242,7 @@ Formatting rules:
 
 - Use short bullets, not long paragraphs.
 - Each `Detailed Findings` area should usually have 2-5 bullets.
-- Do not include recommendation language such as `should`, `could`, `better`, `improve`, or `fix` unless quoting user input.
+- Describe current behavior and uncertainty. Keep design recommendations out unless explicitly requested.
 - `Architecture Notes` must describe observed patterns only.
 - `Open Questions` may be empty only if everything was fully confirmed. If empty, write `None.`
 - Terse writing is good. Missing evidence is not.
@@ -276,7 +274,8 @@ Do not save the document until all are true:
 - ticket claims are separated from verified findings
 - code references are concrete
 - open questions are explicit rather than implied
-- metadata fields are filled with real values, not placeholders
+- the relevant flow, supporting tests, and material failure paths are covered or explicitly marked unconfirmed
+- metadata fields contain observed values or explicit unavailable/unknown conditions, not placeholders
 
 ### 8. Present Findings to the User
 
@@ -302,13 +301,3 @@ If the user asks a follow-up question on the same topic:
 ```
 
 - repeat the same evidence discipline for the follow-up section
-
-## Important Notes
-
-- Always do fresh codebase research.
-- If a project graph already exists, prefer it during discovery to reduce blind searching.
-- Prior research is supplemental only when explicitly requested.
-- Keep the main agent focused on synthesis and coordination.
-- Use subagents for narrow deep dives, not for the whole task.
-- Document what is true now, not what might be true.
-- If a requested area cannot be verified, say so plainly.
