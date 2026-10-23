@@ -1,6 +1,6 @@
 ---
 name: research-codebase
-description: Document codebase as-is and save point-in-time research in thoughts/research
+description: Document current codebase behavior, trace flows, and find existing implementations and test patterns, saving research with source evidence in thoughts/research.
 ---
 
 # Research Codebase
@@ -15,7 +15,7 @@ Research runs on Luna; the caller configures the model and reasoning effort. Pro
 - Describe what exists today in code, config, docs, and directly referenced artifacts.
 - Do not recommend changes unless the user explicitly asks for recommendations.
 - Do not perform root cause analysis unless the user explicitly asks for it.
-- Do not critique the implementation.
+- Keep unsolicited design critique outside the research. Report contradictions between documented claims, callers, tests, and implementation as evidence.
 - The only permitted repository write is the research document under `thoughts/research/`. Do not change source, tests, configuration, dependencies, generated files, or git state.
 - Implementation belongs to a subsequent phase. Record requested future implementation in the research anchor and finish the research artifact.
 - Distinguish clearly between:
@@ -72,8 +72,7 @@ Before using subagents:
 - Find the relevant files, directories, symbols, and tests yourself.
 - Build a short working map of likely evidence sources.
 - Prefer current code and directly referenced docs over old research notes.
-- Trace the relevant behavior from its entry point to its observable result. Inspect authorization, interfaces, state changes, persistence, and external effects only where the flow touches them.
-- Inspect callers and consumers at each relevant boundary, plus the existing tests and material failure paths. Do not infer a whole flow from one implementation or test file.
+- Use [flow tracing and reuse guidance](references/flows-and-reuse.md) when explaining a code path or finding an existing mechanism, usage example, or test pattern. Apply only the parts relevant to the research question.
 
 Do not search prior research unless the user explicitly asked you to use it.
 
@@ -87,18 +86,16 @@ Do not search prior research unless the user explicitly asked you to use it.
 
 Use parallel subagents only for bounded read-only tasks that materially improve coverage or preserve main-context focus after native discovery. Skip delegation when direct inspection is sufficient.
 
-Preferred roles:
+Keep delegated tasks concrete:
 
-- `codebase-analyzer`: explain how a specific component works
-- `codebase-pattern-finder`: find examples or usage sites of a known pattern
-- `thoughts-locator` or `thoughts-analyzer`: only if the user explicitly referenced prior research
-- `web-search-researcher`: only if the user explicitly asked for external research
+- Trace one code path or interface, or find existing implementations and tests for one behavior, using the flow tracing and reuse guidance above. No specialized helper skill is required.
+- Investigate prior research or external sources only when explicitly requested, keeping the question narrow and returning concrete source references.
 
 Rules for delegation:
 
 - Every subagent prompt must say the task is documentation-only.
 - Every subagent prompt must forbid repository writes and implementation.
-- Every subagent prompt must forbid recommendations and critiques.
+- Keep recommendations and critiques outside delegated research unless explicitly requested. Require supported discrepancies and uncertainty to be reported.
 - Ask each subagent for:
   - concrete findings
   - file paths
@@ -110,7 +107,7 @@ Rules for delegation:
 Use this prompt shape, including the write and scope restrictions above:
 
 ```text
-Document current implementation only. No recommendations, no critique.
+Document current implementation only. Report supported discrepancies and uncertainty. Omit recommendations unless requested.
 
 Research target: [component / flow / question]
 Focus: [what to verify]

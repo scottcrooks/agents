@@ -240,25 +240,26 @@ class PlanBoundaryCheckTest(unittest.TestCase):
 
     def test_stop_hook_blocks_omitted_slice_and_accepts_corrected_ledger(self) -> None:
         transcript = self.root / "transcript.jsonl"
-        transcript.write_text(json.dumps({"type": "event_msg", "payload": {
-            "type": "user_message", "message": f"$implement-plan {self.plan}",
-        }}) + "\n")
-        for omitted in (True, False):
-            with self.subTest(omitted=omitted):
-                entries = [(1, "Owner updates", "complete")] if omitted else None
-                self.write_artifacts(ledger_entries=entries)
-                result = subprocess.run(
-                    [sys.executable, str(SCRIPT_DIRECTORY / "stop_guard.py")],
-                    input=json.dumps({"transcript_path": str(transcript), "cwd": str(self.root)}),
-                    capture_output=True, text=True, check=False, timeout=10,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                response = json.loads(result.stdout)
-                if omitted:
-                    self.assertEqual(response["decision"], "block")
-                    self.assertIn("ledger slices must match plan", response["reason"])
-                else:
-                    self.assertTrue(response["continue"])
+        for invocation in ("$implement-plan", "/goal implement-plan", "/goal $implement-plan"):
+            transcript.write_text(json.dumps({"type": "event_msg", "payload": {
+                "type": "user_message", "message": f"{invocation} {self.plan}",
+            }}) + "\n")
+            for omitted in (True, False):
+                with self.subTest(invocation=invocation, omitted=omitted):
+                    entries = [(1, "Owner updates", "complete")] if omitted else None
+                    self.write_artifacts(ledger_entries=entries)
+                    result = subprocess.run(
+                        [sys.executable, str(SCRIPT_DIRECTORY / "stop_guard.py")],
+                        input=json.dumps({"transcript_path": str(transcript), "cwd": str(self.root)}),
+                        capture_output=True, text=True, check=False, timeout=10,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    response = json.loads(result.stdout)
+                    if omitted:
+                        self.assertEqual(response["decision"], "block")
+                        self.assertIn("ledger slices must match plan", response["reason"])
+                    else:
+                        self.assertTrue(response["continue"])
 
 
 if __name__ == "__main__":

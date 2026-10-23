@@ -160,7 +160,7 @@ When invoked:
   - Validation result
   - Notes limited to execution facts
 - Initialize the boundary-control metadata required by `implement-plan`:
-  - Execution mode: `boundary-driven`
+  - Execution mode: `continuous` unless the caller explicitly selects another mode
   - Boundary state: `active`
   - Boundary evidence: `none`
   - Validation: `not run`
@@ -175,7 +175,7 @@ When invoked:
 - Do not use parallel fan-out for plan creation.
 - Use at most one read-only subagent only when a specific execution-critical gap cannot be resolved efficiently through targeted direct inspection.
 - Keep that task narrow: one code path, interface, validation command, or existing pattern. Forbid further delegation.
-- Prefer `codebase-pattern-finder` for one concrete implementation or test pattern and `codebase-analyzer` for one precise code path or interface.
+- Use the [flow tracing and reuse guidance](../research-codebase/references/flows-and-reuse.md) for the specific code path, interface, implementation example, or test pattern being investigated.
 - Require concrete file:line references and a concise result. Do not delegate broad discovery, plan synthesis, or duplicate questions.
 - If no subagent is needed, proceed directly to writing the plan.
 
@@ -280,7 +280,7 @@ Initialize the companion status ledger with this shape:
 - Research: [path]
 - Overall status: `not_started`
 - Automation mode: [same as plan]
-- Execution mode: `boundary-driven`
+- Execution mode: `continuous`
 - Boundary state: `active`
 - Boundary evidence: none
 - Validation: not run

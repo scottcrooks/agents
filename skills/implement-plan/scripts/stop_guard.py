@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Any
 
 
-PLAN_INVOCATION = re.compile(r"\$implement-plan\s+([^\r\n]+)")
+PLAN_INVOCATION = re.compile(
+    r"(?:\$implement-plan|/goal[ \t]+\$?implement-plan)[ \t]+([^\r\n]+)"
+)
 LEDGER_SECTION = re.compile(
     r"^##\s+Status Ledger Path\s*$\n(?P<body>.*?)(?=^##\s|\Z)",
     re.MULTILINE | re.DOTALL,

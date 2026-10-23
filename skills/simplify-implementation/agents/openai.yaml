@@ -1,0 +1,4 @@
+interface:
+  display_name: "Simplify Implementation"
+  short_description: "Refactor an implementation for simplicity"
+  default_prompt: "Use $simplify-implementation to simplify the current change set, reuse existing mechanisms, and reduce PR scope while preserving required behavior."

@@ -1,71 +1,57 @@
 ---
 name: improve-codebase-architecture
-description: Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunities, consolidate tightly-coupled modules, or make a codebase more testable and AI-navigable.
+description: Find architectural improvements that hide complexity behind simpler interfaces, deepen shallow modules, and consolidate scattered responsibilities. Use to investigate refactoring opportunities across module boundaries and return concrete findings for the operator to act on.
 ---
 
 # Improve Codebase Architecture
 
-Surface architectural friction and propose **deepening opportunities** — refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability.
+Find places where changing the structure of the code would make real behavior easier to understand, use, change, and verify. Ground opportunities in existing callers and responsibilities. This skill owns investigation and findings; the operator handles ticket creation and subsequent implementation. Keep repository inspection read-only.
 
-## Glossary
+A deep module hides substantial complexity behind an interface that is simple to use correctly. That interface includes everything a caller must know: inputs, ordering, state, configuration, and failure behavior. Depth comes from reducing those obligations, not increasing implementation size. A seam is a place where responsibilities meet or behavior can be substituted; follow it to see which side actually owns the complexity.
 
-Use these terms exactly in every suggestion. Consistent language is the point — don't drift into "component," "service," "API," or "boundary." Full definitions in [LANGUAGE.md](LANGUAGE.md).
+## Follow the complexity
 
-- **Module** — anything with an interface and an implementation (function, class, package, slice).
-- **Interface** — everything a caller must know to use the module: types, invariants, error modes, ordering, config. Not just the type signature.
-- **Implementation** — the code inside.
-- **Depth** — leverage at the interface: a lot of behaviour behind a small interface. **Deep** = high leverage. **Shallow** = interface nearly as complex as the implementation.
-- **Seam** — where an interface lives; a place behaviour can be altered without editing in place. (Use this, not "boundary.")
-- **Adapter** — a concrete thing satisfying an interface at a seam.
-- **Leverage** — what callers get from depth.
-- **Locality** — what maintainers get from depth: change, bugs, knowledge concentrated in one place.
+Start with the requested area or flow and read repository instructions. Inspect relevant architectural decisions and domain documentation when present; no glossary, setup workflow, plan, or new documentation is required to begin. Use the project's familiar names.
 
-Key principles (see [LANGUAGE.md](LANGUAGE.md) for the full list):
+Trace real entry points, callers, implementations, dependencies, and tests. Follow the flow across seams rather than judging isolated files. Look for:
 
-- **Deletion test**: imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
-- **The interface is the test surface.**
-- **One adapter = hypothetical seam. Two adapters = real seam.**
+- Callers coordinating several modules, knowing their internals, or repeating setup, validation, ordering, cleanup, and error handling.
+- Responsibilities split across wrappers and small modules that must be understood or changed together.
+- Derived or duplicated state, competing sources of truth, and rules repeated across layers.
+- Public interfaces exposing internal options or lifecycle details that could be owned inside the implementation.
+- Parallel mechanisms where an existing utility, module, framework capability, or dependency already provides the needed behavior.
+- Tests that require extensive internal mocking or assembly because no useful boundary owns the behavior being tested.
 
-This skill is _informed_ by the project's domain model. The domain language gives names to good seams; ADRs record decisions the skill should not re-litigate.
+Keep exploration bounded to the request. State what was inspected and any coverage limits; do not imply a repository-wide assessment from a small sample.
 
-## Process
+## Establish a simpler design
 
-### 1. Explore
+For each candidate, identify the concrete maintenance or caller burden and show what would disappear after the refactor. Consider removing indirection, consolidating responsibilities that change together, deriving state, reusing an existing mechanism, or moving coordination behind a smaller interface.
 
-Read the project's domain glossary and any ADRs in the area you're touching first.
+Apply the deletion test: if removing a wrapper leaves callers equally simple, it may not earn its place. If removing a module scatters its responsibilities across callers, it is hiding useful complexity. Check the complete resulting flow; relocating complexity does not remove it.
 
-Then use the Agent tool with `subagent_type=Explore` to walk the codebase. Don't follow rigid heuristics — explore organically and note where you experience friction:
+Assess candidates using the actual callers and constraints:
 
-- Where does understanding one concept require bouncing between many small modules?
-- Where are modules **shallow** — interface nearly as complex as the implementation?
-- Where have pure functions been extracted just for testability, but the real bugs hide in how they're called (no **locality**)?
-- Where do tightly-coupled modules leak across their seams?
-- Which parts of the codebase are untested, or hard to test through their current interface?
+- Show how callers would use the proposed interface and which decisions the implementation would own. Include a small before/after example when it clarifies the improvement.
+- Reduce the total complexity of the interface, implementation, and callers. Avoid combining independent responsibilities into a large module with flags for unrelated uses.
+- Preserve useful boundaries for data ownership, authorization, deployment, dependency isolation, and independent change. A thin module can serve one of these purposes; one implementation does not automatically make a seam unnecessary.
+- Confirm that reuse matches the required semantics and lifecycle. Do not force different behaviors into a shared abstraction merely because their code looks similar.
+- Choose dependency and test strategies from the actual risk. Ports, adapters, injection, and mocks must solve a concrete problem; external I/O alone does not require a new abstraction.
 
-Apply the **deletion test** to anything you suspect is shallow: would deleting it concentrate complexity, or just move it? A "yes, concentrates" is the signal you want.
+Compare alternatives only when they expose a meaningful tradeoff. Do not invent designs, require parallel agents, or target a number of opportunities. Report when the existing structure earns its complexity.
 
-### 2. Present candidates
+## Return concrete opportunities
 
-Present a numbered list of deepening opportunities. For each candidate:
+Prioritize by demonstrated benefit and likely change cost. For each opportunity, explain:
 
-- **Files** — which files/modules are involved
-- **Problem** — why the current architecture is causing friction
-- **Solution** — plain English description of what would change
-- **Benefits** — explained in terms of locality and leverage, and also in how tests would improve
+- **Evidence:** the relevant files, symbols, callers, and tests, with line references where practical.
+- **Current burden:** the decisions or coordination callers must handle, the knowledge repeated across modules, or the responsibilities that must change together.
+- **Refactoring direction:** what would be removed, combined, reused, or moved behind a simpler interface, and where responsibilities would live.
+- **Expected improvement:** which obligations, branches, duplicated rules, or dependencies would disappear. Explain why the complete flow becomes simpler.
+- **Constraints and verification:** behavior and useful boundaries to preserve, material tradeoffs, relevant existing checks, and any unresolved assumption or decision.
 
-**Use CONTEXT.md vocabulary for the domain, and [LANGUAGE.md](LANGUAGE.md) vocabulary for the architecture.** If `CONTEXT.md` defines "Order," talk about "the Order intake module" — not "the FooBarHandler," and not "the Order service."
+Make each finding understandable without the conversation, with enough scope to distinguish a coherent improvement from adjacent cleanup. Group tightly related changes that deliver one simplification; keep independent outcomes separate. Do not expand a finding into a full implementation plan or prescribe a ticket format.
 
-**ADR conflicts**: if a candidate contradicts an existing ADR, only surface it when the friction is real enough to warrant revisiting the ADR. Mark it clearly (e.g. _"contradicts ADR-0007 — but worth reopening because…"_). Don't list every theoretical refactor an ADR forbids.
+Before reporting, trace the proposed responsibility change through the affected callers and failure paths. Check that it would remove complexity rather than relocate it, preserve required behavior, and retain meaningful test coverage. Use existing tests as evidence of assertions, not proof that execution passed. Distinguish static inspection from observed behavior, and state any evidence gaps.
 
-Do NOT propose interfaces yet. Ask the user: "Which of these would you like to explore?"
-
-### 3. Grilling loop
-
-Once the user picks a candidate, drop into a grilling conversation. Walk the design tree with them — constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
-
-Side effects happen inline as decisions crystallize:
-
-- **Naming a deepened module after a concept not in `CONTEXT.md`?** Add the term to `CONTEXT.md` — same discipline as `/grill-with-docs` (see [CONTEXT-FORMAT.md](../grill-with-docs/CONTEXT-FORMAT.md)). Create the file lazily if it doesn't exist.
-- **Sharpening a fuzzy term during the conversation?** Update `CONTEXT.md` right there.
-- **User rejects the candidate with a load-bearing reason?** Offer an ADR, framed as: _"Want me to record this as an ADR so future architecture reviews don't re-suggest it?"_ Only offer when the reason would actually be needed by a future explorer to avoid re-suggesting the same thing — skip ephemeral reasons ("not worth it right now") and self-evident ones. See [ADR-FORMAT.md](../grill-with-docs/ADR-FORMAT.md).
-- **Want to explore alternative interfaces for the deepened module?** See [INTERFACE-DESIGN.md](INTERFACE-DESIGN.md).
+Return findings directly in the caller's requested format. Leave source, tests, configuration, documentation, and git state unchanged. Stop when the requested area is covered and the opportunities are supported by evidence; a clean assessment with no worthwhile opportunity is a valid result.

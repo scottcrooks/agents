@@ -1,6 +1,0 @@
-interface:
-    display_name: "Interrogate Research"
-    short_description: "Answers codebase questions anchored in an existing research doc"
-
-policy:
-    allow_implicit_invocation: false
