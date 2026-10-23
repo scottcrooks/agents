@@ -1,4 +1,4 @@
 interface:
   display_name: "Verify Implementation"
-  short_description: "Verify plan requirements and repair concrete gaps"
-  default_prompt: "Use $verify-implementation to check the full implementation against its approved plan, repair clear gaps, and verify each required outcome with evidence."
+  short_description: "Verify plan conformance and change set correctness"
+  default_prompt: "Use $verify-implementation to check plan conformance and the full change set for correctness defects, repair clear gaps and regressions, and verify the results with evidence."
